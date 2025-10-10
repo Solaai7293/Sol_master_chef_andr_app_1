@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>My Recipes (PWA)</title>
+  <meta name="description" content="Simple cooking recipes app — open in Chrome and Add to Home screen" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext x='0' y='50' font-size='50'%3E%F0%9F%8D%9C%3C/text%3E%3C/svg%3E">
+  <style>
+    :root{--bg:#f7f7f8;--card:#fff;--muted:#9aa0a6;--accent:#2b8aef;--good:#2ecc71;--bad:#ff595e;--pending:#f3f4f6;--active:#fff7e6}
+    *{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial}
+    body{margin:0;background:var(--bg);color:#111}
+    header{display:flex;align-items:center;gap:12px;padding:14px;background:linear-gradient(90deg,#fff,#fbfbfb);box-shadow:0 1px 0 rgba(0,0,0,.05)}
+    .menu{width:40px;height:40px;border-radius:10px;background:linear-gradient(180deg,#fff,#f1f5f9);display:grid;place-items:center;cursor:pointer}
+    h1{font-size:18px;margin:0}
+    .search{margin-left:auto;display:flex;gap:8px}
+    .search input{padding:8px 10px;border-radius:8px;border:1px solid #e6e9ef;width:170px}
+
+    main{padding:16px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+    .card{background:var(--card);padding:12px;border-radius:12px;box-shadow:0 6px 18px rgba(16,24,40,.06);position:relative}
+    .card .title{font-weight:600;margin-bottom:6px}
+    .card .meta{font-size:12px;color:var(--muted)}
+    .fab{position:fixed;right:18px;bottom:18px;width:56px;height:56px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:28px;box-shadow:0 8px 20px rgba(43,138,239,.28);cursor:pointer}
+    .three{position:absolute;right:10px;top:10px;opacity:.8;cursor:pointer}
+
+    /* Drawer */
+    .drawer{position:fixed;left:0;top:0;bottom:0;width:290px;background:var(--card);box-shadow:2px 0 24px rgba(16,24,40,.08);transform:translateX(-320px);transition:transform .26s;z-index:30;padding:16px}
+    .drawer.open{transform:none}
+    .drawer h3{margin:0 0 8px}
+    .cat-list{display:flex;flex-direction:column;gap:8px}
+    .cat{padding:8px;border-radius:8px;border:1px solid #eee;display:flex;justify-content:space-between;align-items:center}
+    .cat input{border:none;background:transparent;outline:none}
+    .small{font-size:12px;color:var(--muted)}
+
+    /* editor */
+    .editor{max-width:900px;margin:8px auto;background:var(--card);padding:12px;border-radius:12px}
+    .row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+    .row textarea{flex:1;padding:8px;border-radius:8px;border:1px solid #e9eef4;min-height:44px}
+    .row input[type=number]{width:86px;padding:8px;border-radius:8px;border:1px solid #e9eef4}
+    .muted{color:var(--muted);font-size:13px}
+    .btn{padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    .btn.primary{background:var(--accent);color:#fff}
+    .btn.ghost{background:transparent;border:1px solid #eef2f7}
+
+    /* recipe view */
+    .recipe{max-width:900px;margin:12px auto;padding:12px}
+    .controls{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+    .step{display:flex;align-items:center;gap:8px;padding:8px;border-radius:10px;border:1px solid #eee}
+    .step.pending{background:var(--pending)}
+    .step.active{background:var(--active);border:1px solid #f1c40f}
+    .step.done{background:#ecfff0;border:1px solid rgba(46,204,113,.15)}
+    .step.failed{background:#fff1f1;border:1px solid rgba(255,89,94,.12)}
+    .step .idx{width:28px}
+    .icons{display:flex;gap:8px}
+    .tick,.cross{width:36px;height:36px;border-radius:8px;display:grid;place-items:center;cursor:pointer}
+    .tick{background:#e9fff3;border:1px solid rgba(46,204,113,.15)}
+    .cross{background:#fff1f1;border:1px solid rgba(255,89,94,.12)}
+    .timer{min-width:64px;text-align:center}
+    .top-timer{font-weight:700;margin-left:auto}
+
+    @media (max-width:600px){.grid{grid-template-columns:repeat(2,1fr)} .search input{width:110px}}
+  </style>
+</head>
+<body>
+  <div class="drawer" id="drawer">
+    <h3>Categories <button id="addCatBtn" class="btn ghost" style="float:right">+</button></h3>
+    <div class="cat-list" id="catList"></div>
+    <hr/>
+    <div class="muted">Tap a category to filter. "All" shows every recipe.</div>
+  </div>
+
+  <header>
+    <div class="menu" id="menuBtn">☰</div>
+    <h1>My Recipes</h1>
+    <div class="search">
+      <input id="search" placeholder="Search recipes..." />
+    </div>
+  </header>
+
+  <main id="main">
+    <div class="grid" id="recipeGrid"></div>
+  </main>
+
+  <div class="fab" id="fab">＋</div>
+
+  <!-- Editor modal (simple) -->
+  <div id="editorWrap" style="display:none;padding:12px;position:fixed;inset:8px;background:rgba(0,0,0,.4);z-index:40">
+    <div class="editor" id="editor">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+        <input id="rTitle" placeholder="Recipe title" style="font-size:16px;padding:8px;border-radius:8px;border:1px solid #e9eef4;flex:1" />
+        <div>
+          <label class="small">Category</label>
+          <select id="rCategory" multiple style="min-width:160px;height:44px;border-radius:8px;border:1px solid #e9eef4;padding:6px"></select>
+        </div>
+      </div>
+      <div id="stepsList"></div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button id="addStepBtn" class="btn ghost">+ Step</button>
+        <div style="margin-left:auto;display:flex;gap:8px">
+          <button id="cancelEdit" class="btn">Cancel</button>
+          <button id="saveRecipe" class="btn primary">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recipe viewer -->
+  <div id="viewerWrap" style="display:none;padding:12px;position:fixed;inset:8px;background:rgba(0,0,0,.4);z-index:40">
+    <div class="recipe" id="viewer">
+      <div style="display:flex;align-items:center;gap:12px">
+        <h2 id="vTitle">Recipe</h2>
+        <div class="controls">
+          <button id="startBtn" class="btn primary">Start</button>
+          <button id="pauseBtn" class="btn" style="display:none">Pause</button>
+          <button id="stopBtn" class="btn" style="display:none">Stop</button>
+          <div class="top-timer" id="overallTimer">00:00:00</div>
+        </div>
+      </div>
+      <div id="vSteps"></div>
+      <div style="margin-top:8px;text-align:right">
+        <button id="closeViewer" class="btn">Close</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+// Simple PWA-ish setup: create and register a service worker via blob and a manifest blob so user can Add to Home screen
+(function setupPWA(){
+  try{
+    const swCode = `self.addEventListener('install', e=>self.skipWaiting());self.addEventListener('fetch', ()=>{});`;
+    const swBlob = new Blob([swCode],{type:'application/javascript'});
+    const swUrl = URL.createObjectURL(swBlob);
+    if('serviceWorker' in navigator){navigator.serviceWorker.register(swUrl).catch(()=>{});}    
+    const manifest = {name:'My Recipes',short_name:'Recipes',start_url:'.',display:'standalone',icons:[{src:location.origin+'/favicon.ico',sizes:'64x64',type:'image/x-icon'}]};
+    const mf = new Blob([JSON.stringify(manifest)],{type:'application/json'});
+    const mfUrl = URL.createObjectURL(mf);
+    const link = document.createElement('link');link.rel='manifest';link.href=mfUrl;document.head.appendChild(link);
+  }catch(e){console.warn(e)}
+})();
+
+// Utility
+const $ = id=>document.getElementById(id);
+const qs = s=>document.querySelector(s);
+
+let recipes = JSON.parse(localStorage.getItem('recipes')||'[]');
+let categories = JSON.parse(localStorage.getItem('categories')||'["All"]');
+let currentFilter = 'All';
+
+// Sample if empty
+if(recipes.length===0){recipes = [{id: genId(),title:'Boiled Eggs',cats:['All','Veg'],steps:[{text:'Boil water',min:2},{text:'Add eggs',min:10},{text:'Cool and peel',min:3}],created:Date.now()}];saveAll();}
+
+function saveAll(){localStorage.setItem('recipes',JSON.stringify(recipes));localStorage.setItem('categories',JSON.stringify(categories));}
+function genId(){return 'r_'+Math.random().toString(36).slice(2,9)}
+
+// Drawer & categories
+const drawer = $('drawer');$('menuBtn').onclick=()=>drawer.classList.toggle('open');
+$('addCatBtn').onclick=()=>{const n=prompt('New category name');if(n){if(!categories.includes(n))categories.push(n);renderCats();saveAll();}}
+function renderCats(){const list=$('catList');list.innerHTML='';categories.forEach(cat=>{const div=document.createElement('div');div.className='cat';div.textContent=cat;div.onclick=()=>{currentFilter=cat;drawer.classList.remove('open');renderGrid();};list.appendChild(div)});}
+
+// Main grid
+const grid = $('recipeGrid');function renderGrid(){grid.innerHTML='';const q = $('search').value.trim().toLowerCase();recipes.filter(r=> (currentFilter==='All' || (r.cats||[]).includes(currentFilter)) && (!q||r.title.toLowerCase().includes(q)) ).forEach(r=>{
+  const c=document.createElement('div');c.className='card';
+  c.innerHTML = `<div class="three">⋮</div><div class="title">${escapeHtml(r.title)}</div><div class="meta">${(r.cats||[]).join(', ') || 'No category'}</div>`;
+  c.querySelector('.title').onclick = ()=>openViewer(r.id);
+  c.querySelector('.three').onclick = (e)=>{e.stopPropagation();openMenuFor(r)};
+  grid.appendChild(c);
+});}
+function openMenuFor(r){const act = confirm('Edit? OK = Edit, Cancel = show options (Rename/Delete)');if(act){openEditor(r.id);return;}const choice = prompt('Type R to rename, D to delete');if(!choice) return; if(choice.toUpperCase()==='R'){const n=prompt('New title',r.title);if(n){r.title=n;saveAll();renderGrid();}} if(choice.toUpperCase()==='D'){if(confirm('Delete "'+r.title+'"?')){recipes = recipes.filter(x=>x.id!==r.id);saveAll();renderGrid();}}
+}
+
+// Search
+$('search').addEventListener('input',()=>renderGrid());
+
+// Editor
+const editorWrap = $('editorWrap');const stepsList = $('stepsList');const rCategory = $('rCategory');
+$('fab').onclick=()=>openEditor();
+function openEditor(id){editorWrap.style.display='block';editingId = id||null;const rec = recipes.find(x=>x.id===id) || {title:'',cats:[],steps:[]};$('rTitle').value = rec.title||'';renderCategoryOptions();
+  // set selected
+  for(let i=0;i<rCategory.options.length;i++){rCategory.options[i].selected = (rec.cats||[]).includes(rCategory.options[i].value)}
+  stepsList.innerHTML='';(rec.steps||[]).forEach(s=>addStepRow(s.text,s.min));if((rec.steps||[]).length===0) addStepRow('','');
+}
+function renderCategoryOptions(){rCategory.innerHTML='';categories.forEach(c=>{const opt=document.createElement('option');opt.value=c;opt.text=c; rCategory.appendChild(opt);});}
+$('addStepBtn').onclick=()=>addStepRow('','');
+function addStepRow(text,min){const div=document.createElement('div');div.className='row';div.innerHTML = `<textarea placeholder="Step description">${escapeHtml(text||'')}</textarea><input type="number" min="0" placeholder="min" value="${min||''}" /><button class="btn">✖</button>`;
+  div.querySelector('button').onclick=()=>{div.remove()};stepsList.appendChild(div);}
+$('cancelEdit').onclick=()=>{editorWrap.style.display='none'}
+$('saveRecipe').onclick=()=>{
+  const title = $('rTitle').value.trim();if(!title){alert('Give a title');return}
+  const sel = Array.from(rCategory.selectedOptions).map(o=>o.value);const steps = Array.from(stepsList.querySelectorAll('.row')).map(row=>({text:row.querySelector('textarea').value.trim(),min: Number(row.querySelector('input').value)||0})).filter(s=>s.text);
+  if(editingId){const rec = recipes.find(x=>x.id===editingId);rec.title=title;rec.steps=steps;rec.cats = sel.length?sel:['All'];}
+  else{recipes.unshift({id:genId(),title,steps,cats: sel.length?sel:['All'],created:Date.now()});}
+  saveAll();editorWrap.style.display='none';renderGrid();}
+
+// Viewer & timers
+const viewerWrap = $('viewerWrap');let activeRecipe = null;let overallTimerInterval=null;let overallStart=0;let running=false;let stepIntervals = {};let stepRemaining = {};let activeStepIndex = -1;
+function openViewer(id){viewerWrap.style.display='block';activeRecipe = recipes.find(x=>x.id===id);renderViewer();}
+function renderViewer(){if(!activeRecipe)return; $('vTitle').textContent = activeRecipe.title; const vSteps = $('vSteps'); vSteps.innerHTML=''; activeRecipe.steps.forEach((s,i)=>{
+  const div = document.createElement('div');div.className='step pending';div.dataset.idx=i;div.innerHTML = `<div class="idx">${i+1}</div><div style="flex:1"><div>${escapeHtml(s.text)}</div><div class="small">${s.min? s.min+' min':''}</div></div><div class="icons"><div class="timer" id="timer_${i}">${fmtTime(s.min*60)}</div><div class="tick" id="tick_${i}">✓</div><div class="cross" id="cross_${i}">✕</div></div>`;
+  vSteps.appendChild(div);
+  // events
+  div.querySelector('#tick_'+i).onclick=()=>markStep(i,'done');
+  div.querySelector('#cross_'+i).onclick=()=>markStep(i,'failed');
+});
+$('startBtn').style.display='inline-block';$('pauseBtn').style.display='none';$('stopBtn').style.display='none';$('overallTimer').textContent='00:00:00';}
+
+$('closeViewer').onclick=()=>{viewerWrap.style.display='none';stopAll();}
+$('startBtn').onclick=()=>{startAll();}
+$('pauseBtn').onclick=()=>{pauseAll();}
+$('stopBtn').onclick=()=>{stopAll(true);} // true indicates user stopped
+
+function startAll(){if(!activeRecipe) return; if(!running){overallStart = Date.now();$('startBtn').style.display='none';$('pauseBtn').style.display='inline-block';$('stopBtn').style.display='inline-block';running=true;overallTimerInterval = setInterval(()=>{const s = Math.floor((Date.now()-overallStart)/1000);$('overallTimer').textContent = fmtTime(s);},500);activateStep(0);} else { // resume
+  Object.keys(stepIntervals).forEach(k=>{});
+}}
+function pauseAll(){running=false;clearInterval(overallTimerInterval);overallTimerInterval=null; // pause step timers
+  Object.values(stepIntervals).forEach(i=>clearInterval(i));stepIntervals={}; }
+function stopAll(showSummary=false){running=false;clearInterval(overallTimerInterval);overallTimerInterval=null;Object.values(stepIntervals).forEach(i=>clearInterval(i));stepIntervals={};stepRemaining={};activeStepIndex=-1; // calculate overall
+  if(showSummary) alert('Total time: '+$('overallTimer').textContent);
+  renderViewer();}
+
+function activateStep(i){if(i<0||i>=activeRecipe.steps.length) return; // deactivate others
+  activeStepIndex = i; for(let j=0;j<activeRecipe.steps.length;j++){const el = document.querySelector('[data-idx="'+j+'"]');el.className = j<i? 'step done' : j===i? 'step active' : 'step pending';}
+  // start timer for step i
+  const s = activeRecipe.steps[i]; const id = 'timer_'+i; if(s.min>0){let remain = s.min*60; stepRemaining[i]=remain; updateTimer(id,remain); stepIntervals[i]=setInterval(()=>{ if(!running) return; stepRemaining[i]--; if(stepRemaining[i]<=0){clearInterval(stepIntervals[i]);playBeep();stepIntervals[i]=null; updateTimer(id,0);} else updateTimer(id,stepRemaining[i]);},1000);} else {document.getElementById(id).textContent='-'} }
+
+function updateTimer(id,sec){const el = $(id); if(!el) return; el.textContent = fmtTime(sec);}
+
+function markStep(i,state){ // state = 'done' or 'failed'
+  // stop timer if running
+  if(stepIntervals[i]){clearInterval(stepIntervals[i]);stepIntervals[i]=null;}
+  const el = document.querySelector('[data-idx="'+i+'"]'); el.className = state==='done' ? 'step done' : 'step failed';
+  // move to next
+  const next = i+1; if(next<activeRecipe.steps.length){activateStep(next);} else { // finished
+    stopAll(true);
+  }
+}
+
+function playBeep(){try{const ctx=new (window.AudioContext||window.webkitAudioContext)();const o=ctx.createOscillator();const g=ctx.createGain();o.type='sine';o.frequency.value=880;g.gain.value=0.1;o.connect(g);g.connect(ctx.destination);o.start();setTimeout(()=>{o.stop();ctx.close();},900);}catch(e){console.log('beep failed',e)}}
+
+function fmtTime(sec){if(sec<=0) return '00:00'; const h = Math.floor(sec/3600); const m = Math.floor((sec%3600)/60); const s = sec%60; if(h>0) return [pad(h),pad(m),pad(s)].join(':'); return [pad(m),pad(s)].join(':');}
+function pad(n){return String(n).padStart(2,'0')}
+
+function escapeHtml(s){return (s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')}
+
+// init
+renderCats();renderGrid();
+
+// keyboard: close editor/viewer with ESC
+window.addEventListener('keydown',e=>{if(e.key==='Escape'){editorWrap.style.display='none';viewerWrap.style.display='none'}})
+
+</script>
+</body>
+</html>
