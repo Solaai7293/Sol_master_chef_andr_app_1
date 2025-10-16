@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Money Manager</title>
+<meta name="description" content="Money Manager PWA - single file" />
+<style>
+  :root{
+    --bg:#f4f6fb; --card:#ffffff; --muted:#7b8794; --accent:#2b6ef6;
+    --income:#16a34a; --expense:#ef4444; --shadow: rgba(16,24,40,.06);
+  }
+  *{box-sizing:border-box;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
+  body{margin:0;background:var(--bg);color:#0b1220;-webkit-font-smoothing:antialiased}
+  header.top{display:flex;align-items:center;gap:12px;padding:12px;background:linear-gradient(180deg,#fff,#fbfdff);box-shadow:0 1px 0 rgba(0,0,0,.04);position:sticky;top:0;z-index:8}
+  .menu{width:40px;height:40px;border-radius:10px;background:#fff;display:grid;place-items:center;cursor:pointer;border:1px solid #eef2f7}
+  h1{font-size:18px;margin:0}
+  header.sub{display:flex;align-items:center;gap:8px;padding:8px 12px;background:transparent;border-bottom:1px solid rgba(2,6,23,.03);position:sticky;top:64px;z-index:7}
+  .monthNav{display:flex;align-items:center;gap:8px}
+  main{padding:12px;padding-bottom:120px}
+  .card{background:var(--card);padding:10px;border-radius:12px;margin-bottom:12px;box-shadow:0 6px 18px var(--shadow)}
+  .small{font-size:13px;color:var(--muted)}
+  .trailer{position:fixed;left:0;right:0;bottom:0;height:64px;background:#fff;display:flex;justify-content:space-around;align-items:center;border-top:1px solid rgba(2,6,23,.06)}
+  .trailer button{background:transparent;border:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;color:var(--muted);cursor:pointer;height:100%}
+  .trailer button.active{color:var(--accent)}
+  .fab{position:fixed;right:18px;bottom:90px;width:56px;height:56px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:28px;box-shadow:0 10px 28px rgba(43,110,246,.2);cursor:pointer}
+  /* transaction list */
+  .groupHeader{display:flex;justify-content:space-between;align-items:center;padding:8px}
+  .txRow{display:flex;justify-content:space-between;align-items:center;padding:10px;border-top:1px solid #f3f5f8;cursor:pointer}
+  .txLeft{display:flex;gap:10px;align-items:center}
+  .tag{padding:6px 8px;border-radius:8px;background:#f2f7ff;border:1px solid #e7efff;font-size:13px}
+  /* modal sheet */
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.36);display:none;z-index:30}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--card);border-top-left-radius:14px;border-top-right-radius:14px;padding:12px;max-height:86vh;overflow:auto}
+  .row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+  input[type=text], input[type=number], select, input[type=date]{width:100%;padding:10px;border-radius:8px;border:1px solid #e8edf4}
+  .seg{display:flex;gap:8px}
+  .seg button{flex:1;padding:8px;border-radius:8px;border:1px solid #eef2f7;background:transparent;cursor:pointer}
+  .seg button.active{background:#f8fafc;border-color:#e6eefc}
+  .inlineBtn{background:transparent;border:1px solid #eef2f7;padding:6px;border-radius:8px;cursor:pointer}
+  .listEdit{display:flex;justify-content:space-between;align-items:center;padding:8px;border-bottom:1px solid #f2f5f8}
+  .chart{height:200px;display:grid;place-items:center}
+  @media(min-width:720px){main{max-width:720px;margin:0 auto}}
+</style>
+</head>
+<body>
+  <div class="modal" id="modal"><div class="sheet" id="sheet"></div></div>
+
+  <header class="top">
+    <div class="menu" id="menuBtn">☰</div>
+    <h1>Money Manager</h1>
+    <div style="margin-left:auto" id="topTotals"></div>
+  </header>
+
+  <header class="sub" id="subHeader">
+    <!-- dynamic -->
+  </header>
+
+  <main id="main"></main>
+
+  <div class="trailer">
+    <button id="tabTx" class="active">📄<div>Transactions</div></button>
+    <button id="tabStats">📊<div>Statistics</div></button>
+    <button id="tabAcc">🏦<div>Accounts</div></button>
+    <button id="tabSet">⚙️<div>Settings</div></button>
+  </div>
+
+  <div class="fab" id="fab">＋</div>
+
+<script>
+(() => {
+  // --- Utilities & state
+  const $ = id => document.getElementById(id);
+  function dbg(...a){ console.log('[MM]',...a); }
+  function genId(){ return 't_'+Math.random().toString(36).slice(2,9); }
+  function pad2(n){ return String(n).padStart(2,'0'); }
+  function iso(d){ if(!d) d = new Date(); if(typeof d === 'string') d = new Date(d); return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
+  function fmt(d){ if(!d) return ''; const dt = new Date(d); return dt.toLocaleDateString(); }
+
+  const STORAGE = 'mm_v1_data';
+  const ACCKEY = 'mm_v1_accounts';
+  const CATKEY = 'mm_v1_cats';
+
+  let store = JSON.parse(localStorage.getItem(STORAGE) || '{}');
+  if(!store.tx) store.tx = [];
+  let accounts = JSON.parse(localStorage.getItem(ACCKEY) || '["Cash"]');
+  let cats = JSON.parse(localStorage.getItem(CATKEY) || '[{"name":"Food","subs":["Groceries","Dining"]},{"name":"Salary","subs":[]} ]');
+
+  function saveAll(){ localStorage.setItem(STORAGE, JSON.stringify(store)); localStorage.setItem(ACCKEY, JSON.stringify(accounts)); localStorage.setItem(CATKEY, JSON.stringify(cats)); renderTopTotals(); }
+
+  // initial render
+  document.addEventListener('DOMContentLoaded', init);
+
+  // --- UI refs
+  let main, subHeader, fab, modal, sheet;
+
+  // --- navigation state
+  let currentTab = 'tx'; // tx, stats, acc, set
+  let txView = 'daily'; // daily, monthly, custom
+  let monthOffset = 0; // 0 = current month
+
+  function init(){
+    main = $('main'); subHeader = $('subHeader'); fab = $('fab'); modal = $('modal'); sheet = $('sheet');
+    // bind trailer
+    bind('tabTx', ()=>switchTab('tx'));
+    bind('tabStats', ()=>switchTab('stats'));
+    bind('tabAcc', ()=>switchTab('acc'));
+    bind('tabSet', ()=>switchTab('set'));
+    bind('fab', ()=>openTxForm());
+    bind('menuBtn', ()=>alert('Menu — categories/filters available via editors'));
+    // modal close on background click
+    modal.addEventListener('click', (e)=>{ if(e.target === modal) modal.style.display = 'none'; });
+
+    renderTopTotals();
+    render(); // initial
+  }
+
+  function bind(id, fn){
+    const el = $(id);
+    if(!el) return dbg('missing', id);
+    el.addEventListener('click', fn);
+  }
+
+  function renderTopTotals(){
+    const el = $('topTotals');
+    if(!el) return;
+    let inc=0, exp=0;
+    store.tx.forEach(t=>{ if(t.type==='income') inc+=t.amount; if(t.type==='expense') exp+=t.amount; });
+    el.innerHTML = `<div class="small">Income: <strong style="color:var(--income)">₹${inc}</strong> &nbsp; Expense: <strong style="color:var(--expense)">₹${exp}</strong> &nbsp; Balance: <strong>₹${(inc-exp)}</strong></div>`;
+  }
+
+  function switchTab(t){
+    currentTab = t;
+    document.querySelectorAll('.trailer button').forEach(b=>b.classList.remove('active'));
+    if(t==='tx') $('tabTx').classList.add('active');
+    if(t==='stats') $('tabStats').classList.add('active');
+    if(t==='acc') $('tabAcc').classList.add('active');
+    if(t==='set') $('tabSet').classList.add('active');
+    render();
+  }
+
+  function render(){
+    subHeader.innerHTML = '';
+    main.innerHTML = '';
+    if(currentTab === 'tx') renderTransactions();
+    if(currentTab === 'stats') renderStatistics();
+    if(currentTab === 'acc') renderAccounts();
+    if(currentTab === 'set') renderSettings();
+  }
+
+  // -------------------
+  // TRANSACTIONS
+  // -------------------
+  function renderTransactions(){
+    // sub header: daily / monthly / custom
+    const seg = document.createElement('div');
+    seg.style.width = '100%';
+    seg.innerHTML = `<div style="display:flex;gap:8px;width:100%"><button id="vDaily" class="inlineBtn">Daily</button><button id="vMonthly" class="inlineBtn">Monthly</button><button id="vCustom" class="inlineBtn">Custom</button></div>`;
+    subHeader.appendChild(seg);
+    bindEx('vDaily', ()=>{ txView='daily'; render(); });
+    bindEx('vMonthly', ()=>{ txView='monthly'; render(); });
+    bindEx('vCustom', ()=>{ txView='custom'; render(); });
+
+    if(txView === 'daily') renderDaily();
+    else if(txView === 'monthly') renderMonthly();
+    else renderCustom();
+  }
+
+  function bindEx(id, fn){
+    const el = document.getElementById(id);
+    if(el) el.addEventListener('click', fn);
+  }
+
+  // DAILY
+  function renderDaily(){
+    // header with month nav
+    const now = new Date(); now.setMonth(now.getMonth() + monthOffset);
+    const year = now.getFullYear(), month = now.getMonth();
+    const header = document.createElement('div');
+    header.style.width = '100%';
+    header.innerHTML = `<div style="display:flex;align-items:center;gap:8px;width:100%"><div class="monthNav"><button id="prevM" class="inlineBtn">&lt;</button><div style="padding:6px 10px;border-radius:8px;background:#fff;border:1px solid #eef2f7">${now.toLocaleString(undefined,{month:'long'})} ${year}</div><button id="nextM" class="inlineBtn">&gt;</button></div><div style="margin-left:auto" id="monthTotals"></div></div>`;
+    subHeader.appendChild(header);
+    bindEx('prevM', ()=>{ monthOffset--; render(); });
+    bindEx('nextM', ()=>{ monthOffset++; render(); });
+
+    const txs = store.tx.filter(t => { const d = new Date(t.date); return d.getFullYear() === year && d.getMonth() === month; });
+    const groups = {};
+    txs.forEach(t => { const k = iso(t.date); if(!groups[k]) groups[k]=[]; groups[k].push(t); });
+    // totals for month
+    const mInc = txs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+    const mExp = txs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+    const totalsEl = $('monthTotals'); if(totalsEl) totalsEl.innerHTML = `Income ₹${mInc} Expense ₹${mExp} Balance ₹${mInc-mExp}`;
+
+    if(Object.keys(groups).length === 0){
+      main.innerHTML = `<div class="card"><div class="small">No transactions for ${now.toLocaleString(undefined,{month:'long'})} ${year}. Tap + to add.</div></div>`;
+      return;
+    }
+
+    Object.keys(groups).sort((a,b)=>b.localeCompare(a)).forEach(dateKey => {
+      const arr = groups[dateKey];
+      const c = document.createElement('div'); c.className='card';
+      const totalInc = arr.filter(x=>x.type==='income').reduce((s,x)=>s+x.amount,0);
+      const totalExp = arr.filter(x=>x.type==='expense').reduce((s,x)=>s+x.amount,0);
+      c.innerHTML = `<div class="groupHeader"><div><strong>${fmt(dateKey)}</strong><div class="small">Income ₹${totalInc} · Expense ₹${totalExp}</div></div></div>`;
+      arr.forEach(tx => {
+        const r = document.createElement('div'); r.className='txRow';
+        r.innerHTML = `<div class="txLeft"><div class="tag">${escape(tx.category)}${tx.subcat?('/'+escape(tx.subcat)):''}</div><div class="small">${escape(tx.account||'')}</div></div><div style="text-align:right"><div style="font-weight:600;color:${tx.type==='income'?'var(--income)':'var(--expense)'}">₹${tx.amount}</div><div class="small">${escape(tx.notes||'')}</div></div>`;
+        r.addEventListener('click', ()=>openTxForm(tx.id));
+        c.appendChild(r);
+      });
+      main.appendChild(c);
+    });
+  }
+
+  // MONTHLY view
+  function renderMonthly(){
+    const now = new Date();
+    const year = now.getFullYear();
+    const header = document.createElement('div');
+    header.style.width='100%';
+    header.innerHTML = `<div style="display:flex;align-items:center;gap:8px;width:100%"><div class="monthNav"><button id="prevY" class="inlineBtn">&lt;</button><div style="padding:6px 10px;border-radius:8px;background:#fff;border:1px solid #eef2f7">${year}</div><button id="nextY" class="inlineBtn">&gt;</button></div></div>`;
+    subHeader.appendChild(header);
+    bindEx('prevY', ()=>alert('Year navigation demo - not implemented')); bindEx('nextY', ()=>alert('Year navigation demo - not implemented'));
+
+    // show months as cards; each month show weeks that have txs
+    for(let m=0;m<12;m++){
+      const monthName = new Date(year, m, 1).toLocaleString(undefined,{month:'long'});
+      const monthTx = store.tx.filter(t => { const d = new Date(t.date); return d.getFullYear() === year && d.getMonth() === m; });
+      if(monthTx.length === 0) continue;
+      const card = document.createElement('div'); card.className='card';
+      card.innerHTML = `<div style="font-weight:600">${monthName}</div><div class="small">Weeks</div><div id="month_${m}" style="margin-top:8px"></div>`;
+      main.appendChild(card);
+      const weeks = groupWeeks(monthTx, year, m);
+      const container = card.querySelector('#month_'+m);
+      weeks.forEach(w => {
+        const wk = document.createElement('div'); wk.style.borderTop='1px solid #f2f5f8'; wk.style.padding='8px'; wk.style.cursor='pointer';
+        wk.innerHTML = `<div style="display:flex;justify-content:space-between"><div>${w.start} → ${w.end}</div><div>Income ₹${w.income} · Exp ₹${w.expense}</div></div>`;
+        wk.addEventListener('click', ()=>{
+          if(wk.dataset.expanded==='1'){ wk.dataset.expanded=''; const t = wk.querySelector('.txList'); if(t) t.remove(); }
+          else {
+            wk.dataset.expanded='1';
+            const list = document.createElement('div'); list.className='txList'; list.style.marginTop='8px';
+            w.txs.forEach(tx => {
+              const r = document.createElement('div'); r.className='txRow';
+              r.innerHTML = `<div class="txLeft"><div class="tag">${escape(tx.category)}${tx.subcat?('/'+escape(tx.subcat)):''}</div><div class="small">${fmt(tx.date)} · ${escape(tx.account||'')}</div></div><div style="font-weight:600;color:${tx.type==='income'?'var(--income)':'var(--expense)'}">₹${tx.amount}</div>`;
+              list.appendChild(r);
+            });
+            wk.appendChild(list);
+          }
+        });
+        container.appendChild(wk);
+      });
+    }
+  }
+
+  function groupWeeks(txs, year, month){
+    // compute weeks starting Monday -> Sun, list weeks that have transactions
+    const res = [];
+    const first = new Date(year, month, 1);
+    const last = new Date(year, month+1, 0);
+    // start from Monday on or before first
+    let cur = new Date(first);
+    const day = cur.getDay(); const diff = (day+6)%7; cur.setDate(cur.getDate() - diff);
+    while(cur <= last){
+      const s = new Date(cur);
+      const e = new Date(cur); e.setDate(e.getDate()+6);
+      const weekTx = txs.filter(t => { const d = new Date(t.date); return d >= s && d <= e; });
+      if(weekTx.length > 0){
+        const income = weekTx.filter(x=>x.type==='income').reduce((a,b)=>a+b.amount,0);
+        const expense = weekTx.filter(x=>x.type==='expense').reduce((a,b)=>a+b.amount,0);
+        res.push({ start: iso(s), end: iso(e), income, expense, txs: weekTx });
+      }
+      cur.setDate(cur.getDate() + 7);
+    }
+    return res;
+  }
+
+  // CUSTOM range
+  function renderCustom(){
+    subHeader.innerHTML = `<div style="display:flex;gap:8px;align-items:center;width:100%"><label class="small">From</label><input id="fromDate" type="date"/><label class="small">To</label><input id="toDate" type="date"/><button id="applyRange" class="inlineBtn">Apply</button></div>`;
+    document.getElementById('applyRange').addEventListener('click',renderCustomList);
+    main.innerHTML = `<div class="card"><div id="customList"></div></div>`;
+    // optional: prefill with current month
+    const f = document.getElementById('fromDate'), t = document.getElementById('toDate');
+    const d = new Date(); f.value = iso(new Date(d.getFullYear(), d.getMonth(), 1)); t.value = iso(d);
+    renderCustomList();
+  }
+
+  function renderCustomList(){
+    const f = document.getElementById('fromDate').value, t = document.getElementById('toDate').value;
+    let txs = store.tx.slice();
+    if(f) txs = txs.filter(x=> new Date(x.date) >= new Date(f));
+    if(t) txs = txs.filter(x=> new Date(x.date) <= new Date(t));
+    txs.sort((a,b)=> new Date(b.date) - new Date(a.date));
+    const container = document.getElementById('customList'); container.innerHTML = '';
+    if(txs.length===0){ container.innerHTML = '<div class="small">No records</div>'; return; }
+    let total = 0;
+    txs.forEach(tx => { total += tx.amount; const r = document.createElement('div'); r.className='txRow'; r.innerHTML = `<div class="txLeft"><div class="tag">${escape(tx.category)}${tx.subcat?('/'+escape(tx.subcat)):''}</div><div class="small">${fmt(tx.date)} · ${escape(tx.account||'')}</div></div><div style="font-weight:600;color:${tx.type==='income'?'var(--income)':'var(--expense)'}">₹${tx.amount}</div>`; container.appendChild(r); });
+    container.insertAdjacentHTML('afterbegin', `<div class="small" style="padding:8px">Total: ₹${total}</div>`);
+  }
+
+  // -------------------
+  // Transaction form
+  // -------------------
+  function openTxForm(txId){
+    const existing = store.tx.find(x=>x.id===txId);
+    modal.style.display = 'block';
+    sheet.innerHTML = '';
+    const header = document.createElement('div'); header.style.display='flex'; header.style.justifyContent='space-between';
+    header.innerHTML = `<div style="display:flex;align-items:center;gap:8px"><div class="inlineBtn" id="closeForm">←</div><div style="font-weight:600">${existing ? 'Edit' : 'New'} Transaction</div></div><div></div>`;
+    sheet.appendChild(header);
+    document.getElementById('closeForm').addEventListener('click', ()=> modal.style.display='none');
+
+    // segmented: Expense / Income / Transfer
+    const seg = document.createElement('div'); seg.className='row';
+    seg.innerHTML = `<div class="seg"><button id="bExp" class="active">Expense</button><button id="bInc">Income</button><button id="bTr">Transfer</button></div>`;
+    sheet.appendChild(seg);
+    const bExp = document.getElementById('bExp'), bInc = document.getElementById('bInc'), bTr = document.getElementById('bTr');
+    [bExp,bInc,bTr].forEach(b => b.addEventListener('click', ()=>{ [bExp,bInc,bTr].forEach(x=>x.classList.remove('active')); b.classList.add('active'); }));
+
+    // form fields
+    const form = document.createElement('div'); form.style.marginTop='8px';
+    form.innerHTML = `
+      <div class="row"><label class="small">Date</label><input id="txDate" type="date" /></div>
+      <div class="row"><label class="small">Amount</label><input id="txAmount" type="number" inputmode="numeric" /></div>
+      <div class="row"><label class="small">Category</label><div style="flex:1;display:flex;gap:8px"><select id="txCat"></select><button id="editCats" class="inlineBtn">✏️</button></div></div>
+      <div class="row"><label class="small">Subcategory</label><select id="txSub"></select></div>
+      <div class="row"><label class="small">Account</label><div style="flex:1;display:flex;gap:8px"><select id="txAcc"></select><button id="editAcc" class="inlineBtn">✏️</button></div></div>
+      <div class="row"><label class="small">Notes</label><input id="txNotes" type="text" /></div>
+      <div style="display:flex;justify-content:flex-end;margin-top:8px"><button id="saveTx" class="inlineBtn">Save</button></div>
+    `;
+    sheet.appendChild(form);
+
+    // populate
+    const today = new Date();
+    $('txDate').value = existing ? iso(existing.date) : iso(today);
+    $('txAmount').value = existing ? existing.amount : '';
+    $('txNotes').value = existing ? existing.notes : '';
+    // populate categories & accounts
+    function populateCats(){
+      const sel = $('txCat'); sel.innerHTML = ''; cats.forEach(c=>{ const o = document.createElement('option'); o.value = c.name; o.textContent = c.name; sel.appendChild(o); });
+      populateSubs();
+    }
+    function populateSubs(){
+      const sel = $('txSub'); sel.innerHTML = ''; const cur = cats.find(x=>x.name === $('txCat').value);
+      if(!cur || !cur.subs || cur.subs.length===0){ const o = document.createElement('option'); o.value = ''; o.textContent = '—'; sel.appendChild(o); }
+      else cur.subs.forEach(s=>{ const o = document.createElement('option'); o.value = s; o.textContent = s; sel.appendChild(o); });
+    }
+    function populateAccs(){ const sel = $('txAcc'); sel.innerHTML=''; accounts.forEach(a=>{ const o = document.createElement('option'); o.value = a; o.textContent = a; sel.appendChild(o); }); }
+
+    populateCats(); populateAccs();
+    $('txCat').addEventListener('change', populateSubs);
+
+    if(existing){
+      if(existing.type === 'income'){ bInc.classList.add('active'); bExp.classList.remove('active'); }
+      if(existing.category) $('txCat').value = existing.category;
+      populateSubs();
+      if(existing.subcat) $('txSub').value = existing.subcat;
+      if(existing.account) $('txAcc').value = existing.account;
+    }
+
+    $('editCats').addEventListener('click', openCategoryEditor);
+    $('editAcc').addEventListener('click', openAccountEditor);
+
+    $('saveTx').addEventListener('click', ()=>{
+      const tx = {
+        id: existing ? existing.id : genId(),
+        date: $('txDate').value,
+        amount: Number($('txAmount').value || 0),
+        type: bInc.classList.contains('active') ? 'income' : (bTr.classList.contains('active') ? 'transfer' : 'expense'),
+        category: $('txCat').value || 'Misc',
+        subcat: $('txSub').value || '',
+        account: $('txAcc').value || accounts[0] || 'Cash',
+        notes: $('txNotes').value || ''
+      };
+      if(existing){
+        const idx = store.tx.findIndex(x => x.id === existing.id); if(idx !== -1) store.tx[idx] = tx;
+      } else store.tx.push(tx);
+      saveAll();
+      modal.style.display = 'none';
+      render();
+    });
+  }
+
+  // -------------------
+  // Category editor
+  // -------------------
+  function openCategoryEditor(){
+    modal.style.display = 'block'; sheet.innerHTML = '';
+    const header = `<div style="display:flex;justify-content:space-between;align-items:center"><div class="inlineBtn" id="closeCats">←</div><div style="font-weight:600">Categories</div><div><button id="addCat" class="inlineBtn">＋</button></div></div>`;
+    sheet.innerHTML = header + '<div id="catsList" style="margin-top:8px"></div>';
+    document.getElementById('closeCats').addEventListener('click', ()=> modal.style.display='none');
+    document.getElementById('addCat').addEventListener('click', ()=>{
+      const n = prompt('New category name'); if(n){ cats.push({name:n, subs:[]}); saveAll(); renderCategoryList(); }
+    });
+    function renderCategoryList(){
+      const list = document.getElementById('catsList'); list.innerHTML = '';
+      cats.forEach((c,i)=>{
+        const div = document.createElement('div'); div.className='listEdit';
+        div.innerHTML = `<div>${escape(c.name)}</div><div><button class="inlineBtn" data-i="${i}" data-act="edit">✏️</button><button class="inlineBtn" data-i="${i}" data-act="add">＋sub</button><button class="inlineBtn" data-i="${i}" data-act="del">🗑️</button></div>`;
+        list.appendChild(div);
+      });
+      list.querySelectorAll('button').forEach(b => b.addEventListener('click', ()=>{
+        const i = Number(b.dataset.i), act = b.dataset.act;
+        if(act === 'edit'){ const nn = prompt('Rename', cats[i].name); if(nn) cats[i].name = nn; saveAll(); renderCategoryList(); }
+        if(act === 'add'){ const sn = prompt('Sub category name'); if(sn){ cats[i].subs.push(sn); saveAll(); renderCategoryList(); } }
+        if(act === 'del'){ if(confirm('Delete category and subs?')){ cats.splice(i,1); saveAll(); renderCategoryList(); } }
+      }));
+    }
+    renderCategoryList();
+  }
+
+  // -------------------
+  // Account editor
+  // -------------------
+  function openAccountEditor(){
+    modal.style.display = 'block'; sheet.innerHTML = '';
+    const header = `<div style="display:flex;justify-content:space-between;align-items:center"><div class="inlineBtn" id="closeAcc">←</div><div style="font-weight:600">Accounts</div><div><button id="addAcc" class="inlineBtn">＋</button></div></div>`;
+    sheet.innerHTML = header + '<div id="accList" style="margin-top:8px"></div>';
+    document.getElementById('closeAcc').addEventListener('click', ()=> modal.style.display='none');
+    document.getElementById('addAcc').addEventListener('click', ()=>{ const n=prompt('New account'); if(n){ accounts.push(n); saveAll(); renderAccountList(); } });
+    function renderAccountList(){
+      const list = document.getElementById('accList'); list.innerHTML = '';
+      accounts.forEach((a,i)=>{
+        const div = document.createElement('div'); div.className='listEdit';
+        div.innerHTML = `<div>${escape(a)}</div><div><button class="inlineBtn" data-i="${i}" data-act="edit">✏️</button><button class="inlineBtn" data-i="${i}" data-act="del">🗑️</button></div>`;
+        list.appendChild(div);
+      });
+      list.querySelectorAll('button').forEach(b => b.addEventListener('click', ()=>{
+        const i = Number(b.dataset.i), act = b.dataset.act;
+        if(act==='edit'){ const nn = prompt('Rename', accounts[i]); if(nn) accounts[i]=nn; saveAll(); renderAccountList(); }
+        if(act==='del'){ if(confirm('Delete account?')){ accounts.splice(i,1); saveAll(); renderAccountList(); } }
+      }));
+    }
+    renderAccountList();
+  }
+
+  // -------------------
+  // Statistics
+  // -------------------
+  function renderStatistics(){
+    subHeader.innerHTML = `<div style="display:flex;align-items:center;gap:8px;width:100%"><div class="monthNav"><button id="sPrev" class="inlineBtn">&lt;</button><div id="sLabel" style="padding:6px 10px;border-radius:8px;background:#fff;border:1px solid #eef2f7"></div><button id="sNext" class="inlineBtn">&gt;</button></div><div style="margin-left:auto"><select id="periodSel"><option value="month">Month</option><option value="year">Year</option><option value="custom">Custom</option></select></div></div>`;
+    document.getElementById('sPrev').addEventListener('click', ()=>alert('Prev month — demo')); document.getElementById('sNext').addEventListener('click', ()=>alert('Next month — demo'));
+    const container = document.createElement('div'); container.className='card'; container.innerHTML = `<div class="chart"><canvas id="pie" width="300" height="200"></canvas></div><div id="legend"></div>`; main.appendChild(container);
+
+    // compute for current month (simpler)
+    const now = new Date(); const month = now.getMonth(), year = now.getFullYear();
+    const txs = store.tx.filter(t=>{ const d=new Date(t.date); return d.getFullYear()===year && d.getMonth()===month && t.type==='expense'; });
+    const totals = {};
+    txs.forEach(t=>{ const key = t.category + (t.subcat ? ('/'+t.subcat) : ''); totals[key] = (totals[key]||0) + t.amount; });
+    renderPie(totals);
+    $('sLabel').textContent = now.toLocaleString(undefined,{month:'long',year:'numeric'});
+  }
+
+  function renderPie(totals){
+    const keys = Object.keys(totals); const vals = keys.map(k=>totals[k]); const sum = vals.reduce((a,b)=>a+b,0) || 1;
+    const canvas = document.getElementById('pie'); const ctx = canvas.getContext('2d'); ctx.clearRect(0,0,canvas.width,canvas.height);
+    let start = 0; const colors = ['#ef4444','#f59e0b','#10b981','#3b82f6','#8b5cf6','#ec4899','#06b6d4'];
+    keys.forEach((k,i) => {
+      const v = vals[i]; const angle = (v/sum) * Math.PI * 2;
+      ctx.beginPath(); ctx.moveTo(150,100); ctx.arc(150,100,80,start,start+angle); ctx.closePath();
+      ctx.fillStyle = colors[i % colors.length]; ctx.fill();
+      start += angle;
+    });
+    // legend
+    const legend = $('legend'); legend.innerHTML = '';
+    keys.forEach((k,i)=>{ legend.innerHTML += `<div style="display:flex;justify-content:space-between;padding:8px;border-top:1px solid #f2f5f8"><div>${escape(k)}</div><div>₹${totals[k]}</div></div>`; });
+  }
+
+  // ACCOUNTS
+  function renderAccounts(){
+    subHeader.innerHTML = `<div style="display:flex;align-items:center;gap:8px;width:100%"><div style="font-weight:600">Accounts</div><div style="margin-left:auto"><button class="inlineBtn" id="editAccountsBtn">Edit</button></div></div>`;
+    document.getElementById('editAccountsBtn').addEventListener('click', openAccountEditor);
+    const c = document.createElement('div'); c.className='card';
+    if(accounts.length === 0) c.innerHTML = '<div class="small">No accounts.</div>';
+    else { accounts.forEach(a => { c.innerHTML += `<div style="display:flex;justify-content:space-between;padding:8px;border-top:1px solid #f2f5f8"><div>${escape(a)}</div><div class="small">Balance: ₹0</div></div>`; }); }
+    main.appendChild(c);
+  }
+
+  // SETTINGS
+  function renderSettings(){
+    subHeader.innerHTML = `<div style="display:flex;align-items:center;gap:8px;width:100%"><div style="font-weight:600">Settings</div></div>`;
+    const c = document.createElement('div'); c.className='card'; c.innerHTML = `<div style="padding:8px">Data is stored locally. Use browser menu → Add to Home screen to install.</div><div style="padding:8px;display:flex;gap:8px"><button id="exportBtn" class="inlineBtn">Export JSON</button><button id="importBtn" class="inlineBtn">Import JSON</button></div>`; main.appendChild(c);
+    document.getElementById('exportBtn').addEventListener('click', ()=>{ const blob = new Blob([JSON.stringify({store,accounts,cats})],{type:'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'mm-data.json'; a.click(); });
+    document.getElementById('importBtn').addEventListener('click', ()=>{ const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'application/json'; inp.onchange = (e)=>{ const f = e.target.files[0]; const r = new FileReader(); r.onload = ()=>{ try{ const o = JSON.parse(r.result); store = o.store || store; accounts = o.accounts || accounts; cats = o.cats || cats; saveAll(); render(); alert('Imported'); }catch(err){ alert('Invalid file'); } }; r.readAsText(f); }; inp.click(); });
+  }
+
+  // small escape
+  function escape(s){ return String(s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+
+  // save on page unload
+  window.addEventListener('beforeunload', ()=> saveAll());
+
+  // initial debug demo data (if none)
+  if(store.tx.length === 0){
+    store.tx.push({ id:genId(), date: iso(new Date()), amount:120, type:'expense', category:'Food', subcat:'Dining', account:'Cash', notes:'Lunch' });
+    store.tx.push({ id:genId(), date: iso(new Date()), amount:5000, type:'income', category:'Salary', subcat:'', account:'Bank', notes:'Salary credit' });
+    saveAll();
+  }
+
+})();
+</script>
+
+<!-- PWA manifest + minimal service worker bootstrap so Add-to-Home works -->
+<script>
+(function(){
+  try{
+    const swCode = `self.addEventListener('install', e=>self.skipWaiting()); self.addEventListener('fetch', ()=>{});`;
+    const swBlob = new Blob([swCode],{type:'application/javascript'});
+    const swUrl = URL.createObjectURL(swBlob);
+    if('serviceWorker' in navigator) navigator.serviceWorker.register(swUrl).catch(()=>{});
+    const manifest = { name:'Money Manager', short_name:'MoneyMgr', start_url:'.', display:'standalone', background_color:'#ffffff', theme_color:'#2b6ef6' };
+    const mf = new Blob([JSON.stringify(manifest)],{type:'application/json'});
+    const mfUrl = URL.createObjectURL(mf);
+    const link = document.createElement('link'); link.rel='manifest'; link.href = mfUrl; document.head.appendChild(link);
+  } catch(e){ console.warn(e); }
+})();
+</script>
+
+</body>
+</html>
