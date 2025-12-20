@@ -1,0 +1,148 @@
+<!DOCTYPE html><html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Apartment Maintenance Calculator</title><!-- PWA --><link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1976d2" /><style>
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f4f6f8;color:#222}
+header{background:#1976d2;color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
+header h1{font-size:18px;margin:0}
+button{cursor:pointer}
+.page{display:none;padding:16px}
+.page.active{display:block}
+.card{background:#fff;border-radius:8px;padding:12px;margin-bottom:12px;box-shadow:0 2px 4px rgba(0,0,0,.08)}
+.row{display:flex;gap:8px;align-items:center;margin-top:8px}
+.row label{flex:1;font-size:14px}
+.row input{flex:1;padding:6px;border-radius:4px;border:1px solid #ccc}
+.footer-btn{width:100%;padding:12px;background:#1976d2;color:#fff;border:none;border-radius:6px;font-size:16px}
+.small{font-size:13px;color:#666}
+.report-box{white-space:pre-wrap;background:#fff;padding:16px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,.1)}
+.top-actions{display:flex;justify-content:flex-end;gap:8px;margin-bottom:8px}
+</style></head>
+<body><header>
+  <h1>Maintenance Calculator</h1>
+  <button id="setDefaultBtn">Set Default</button>
+</header><!-- MAIN PAGE --><div id="mainPage" class="page active">  <div class="card">
+    <h3>Budget</h3>
+    <div class="row"><label>Per House Amount</label><input id="budgetAmount" type="number"></div>
+    <div class="row"><label>Previous Month Balance</label><input id="prevBalance" type="number"></div>
+  </div>  <div class="card">
+    <h3>Expenses</h3>
+    <div class="row"><label>Sump Water Amount</label><input id="sumpAmt" type="number"></div>
+    <div class="row"><label>Sump Water No. of Times</label><input id="sumpTimes" type="number"></div><div class="row"><label>Drainage Cleaning Amount</label><input id="drainAmt" type="number"></div>
+<div class="row"><label>Drainage Cleaning No. of Times</label><input id="drainTimes" type="number"></div>
+
+<div class="row"><label>Common Area Cleaning</label><input id="commonCleaning" type="number"></div>
+<p class="small">(Paid by Anusha)</p>
+
+<div class="row"><label>EB Bill</label><input id="ebBill" type="number"></div>
+<div class="row"><label>Miscellaneous</label><input id="misc" type="number"></div>
+
+  </div>  <div class="card">
+    <h3>Kindly Transfer (per house)</h3>
+    <div class="row"><label>Transfer Amount</label><input id="transferAmt" type="number"></div>
+  </div><button class="footer-btn" id="generateBtn">Generate Report</button>
+
+</div><!-- DEFAULT PAGE --><div id="defaultPage" class="page">
+  <header><h1>Set Default Amounts</h1></header>
+  <div class="card">
+    <div class="row"><label>Sump Water Default</label><input id="defSump" type="number"></div>
+    <div class="row"><label>Drainage Cleaning Default</label><input id="defDrain" type="number"></div>
+    <div class="row"><label>Common Cleaning Default</label><input id="defCommon" type="number"></div>
+  </div>
+  <button class="footer-btn" id="saveDefaultBtn">Save</button>
+  <br><br>
+  <button class="footer-btn" onclick="showPage('mainPage')">Back</button>
+</div><!-- REPORT PAGE --><div id="reportPage" class="page">
+  <div class="top-actions">
+    <button id="copyBtn">Copy</button>
+  </div>
+  <div id="reportText" class="report-box"></div>
+  <br>
+  <button class="footer-btn" onclick="showPage('mainPage')">OK</button>
+</div><script>
+/* -------- STORAGE -------- */
+const DEF_KEY = 'maint_defaults_v1';
+
+function getDefaults(){
+  return JSON.parse(localStorage.getItem(DEF_KEY) || '{"sump":0,"drain":0,"common":0}');
+}
+function saveDefaults(d){ localStorage.setItem(DEF_KEY, JSON.stringify(d)); }
+
+/* -------- NAV -------- */
+function showPage(id){ document.querySelectorAll('.page').forEach(p=>p.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+
+/* -------- INIT -------- */
+const d = getDefaults();
+sumpAmt.value = d.sump; drainAmt.value = d.drain; commonCleaning.value = d.common;
+sumpTimes.value = 0; drainTimes.value = 0; prevBalance.value = 0; ebBill.value = 0; misc.value = 0; transferAmt.value = 0; budgetAmount.value = 0;
+
+defSump.value = d.sump; defDrain.value = d.drain; defCommon.value = d.common;
+
+setDefaultBtn.onclick = ()=>showPage('defaultPage');
+
+saveDefaultBtn.onclick = ()=>{
+  const nd = {sump:+defSump.value||0, drain:+defDrain.value||0, common:+defCommon.value||0};
+  saveDefaults(nd);
+  sumpAmt.value = nd.sump; drainAmt.value = nd.drain; commonCleaning.value = nd.common;
+  showPage('mainPage');
+};
+
+/* -------- REPORT -------- */
+generateBtn.onclick = ()=>{
+  const now = new Date();
+  const prev = new Date(now.getFullYear(), now.getMonth()-1, 1);
+  const monthYear = prev.toLocaleString('default',{month:'long',year:'numeric'});
+
+  const budgetInHand = (budgetAmount.value*4) + (+prevBalance.value||0);
+  const sumpTotal = sumpAmt.value * sumpTimes.value;
+  const drainTotal = drainAmt.value * drainTimes.value;
+  const totalExpenses = sumpTotal + drainTotal + (+commonCleaning.value||0) + (+ebBill.value||0) + (+misc.value||0);
+
+  const diff = budgetInHand - totalExpenses;
+  const isSurplus = diff >= 0;
+  const perPerson = Math.floor(Math.abs(diff)/4);
+
+  const transferPerHouse = (+transferAmt.value||0) + (isSurplus?0:perPerson);
+  const nextBudget = (transferAmt.value*4) + (isSurplus?perPerson*4:0);
+  const anushaNote = transferPerHouse - commonCleaning.value;
+
+  const report = `Maintenance for ${monthYear} month
+Budget:
+Budget in hand = (RS. ${budgetAmount.value}*4) + (RS. ${prevBalance.value} prev month)
+= Rs. ${budgetInHand}
+Expenses:
+sump water = ${sumpAmt.value} * ${sumpTimes.value}
+= ${sumpTotal}
+Drainage cleaning = ${drainAmt.value} * ${drainTimes.value} = ${drainTotal}
+Common area cleaning =${commonCleaning.value} (paid by Anusha)
+EB bill = ${ebBill.value}
+Miscellaneous = ${misc.value}
+Total= ${totalExpenses}
+Carryover balance for next month(surplus/ deficit)
+= ${budgetInHand} - ${totalExpenses}
+= ${diff} rupees
+=> ${Math.abs(diff)} / 4
+= ${perPerson} ${isSurplus?'surplus':'deficit'}
+KINDLY TRANSFER:
+--------------------------------
+${transferAmt.value} + ${isSurplus?0:perPerson}
+= ${transferPerHouse} rupees per house.
+_______________________________
+Budget for Next month in hand.
+(${transferAmt.value}* 4) + (${isSurplus?perPerson:0}*4)
+= ${transferAmt.value*4} + ${isSurplus?perPerson*4:0}
+= ${nextBudget}
+Note: Anusha needs pay ${anushaNote} only.
+Thanks!`;
+
+  reportText.textContent = report;
+  showPage('reportPage');
+};
+
+copyBtn.onclick = ()=>{
+  navigator.clipboard.writeText(reportText.textContent);
+  alert('Report copied');
+};
+</script></body>
+</html>
