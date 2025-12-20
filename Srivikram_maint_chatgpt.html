@@ -3,21 +3,113 @@
 <head>
 <meta charset="UTF-8">
 <title>Apartment Maintenance Calculator</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
 <style>
-body { font-family: Arial, sans-serif; margin: 10px; background:#f4f4f4; }
-h2, h3 { margin-top:20px; }
-.section { background:#fff; padding:12px; margin-bottom:12px; border-radius:6px; }
-.row { display:flex; gap:10px; margin-bottom:8px; }
-.row label { flex:1; }
-.row input, select { flex:1; padding:6px; }
-.calc { background:#eef; padding:8px; margin:6px 0; border-radius:4px; font-size:14px; }
-button { padding:10px; width:100%; margin-top:10px; }
-.topbar { display:flex; justify-content:space-between; align-items:center; }
-pre { white-space:pre-wrap; font-family:monospace; }
-.hidden { display:none; }
-.small { font-size:13px; color:#444; }
-hr { border:none; border-top:1px solid #aaa; margin:10px 0; }
+body {
+  margin: 0;
+  font-family: system-ui, Arial, sans-serif;
+  background: #f2f2f2;
+}
+
+header {
+  background: #1976d2;
+  color: #fff;
+  padding: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+header h1 {
+  font-size: 18px;
+  margin: 0;
+}
+
+header button {
+  background: #fff;
+  color: #1976d2;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.container {
+  padding: 12px;
+}
+
+.card {
+  background: #fff;
+  padding: 14px;
+  margin-bottom: 14px;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.card h2 {
+  margin-top: 0;
+  font-size: 16px;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 6px;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.row label {
+  flex: 1;
+  font-size: 14px;
+}
+
+.row input, select {
+  flex: 1;
+  padding: 8px;
+  font-size: 14px;
+}
+
+.calc {
+  background: #eef4ff;
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+.total {
+  background: #e3f2fd;
+  font-weight: bold;
+}
+
+button.primary {
+  width: 100%;
+  padding: 14px;
+  font-size: 16px;
+  background: #1976d2;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+}
+
+.hidden { display: none; }
+
+pre {
+  white-space: pre-wrap;
+  font-family: monospace;
+  background: #fff;
+  padding: 14px;
+  border-radius: 6px;
+}
+
+.footer-btn {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  font-size: 16px;
+}
 </style>
 </head>
 
@@ -26,18 +118,20 @@ hr { border:none; border-top:1px solid #aaa; margin:10px 0; }
 <!-- ================= MAIN PAGE ================= -->
 <div id="mainPage">
 
-<div class="topbar">
-<h2>Maintenance Calculator</h2>
+<header>
+<h1>Maintenance Calculator</h1>
 <button onclick="openDefaults()">Set Default</button>
-</div>
+</header>
 
-<div class="section">
-<label>Select Month:</label>
+<div class="container">
+
+<div class="card">
+<label>Month</label>
 <select id="monthSelect"></select>
 </div>
 
-<div class="section">
-<h3>Budget</h3>
+<div class="card">
+<h2>Budget</h2>
 <div class="row">
 <label>Amount per house</label>
 <input id="budgetPerHouse" type="number">
@@ -49,8 +143,8 @@ hr { border:none; border-top:1px solid #aaa; margin:10px 0; }
 <div class="calc" id="budgetCalc"></div>
 </div>
 
-<div class="section">
-<h3>Expenses</h3>
+<div class="card">
+<h2>Expenses</h2>
 
 <div class="row">
 <label>Sump water amount</label>
@@ -87,17 +181,17 @@ hr { border:none; border-top:1px solid #aaa; margin:10px 0; }
 <input id="miscAmt" type="number">
 </div>
 
-<div class="calc" id="totalExpenseCalc"></div>
-<div class="calc" id="perHouseCalc"></div>
+<div class="calc total" id="totalExpenseCalc"></div>
+<div class="calc total" id="perHouseCalc"></div>
 </div>
 
-<div class="section">
-<h3>Carryover Balance</h3>
+<div class="card">
+<h2>Carryover Balance</h2>
 <div class="calc" id="carryCalc"></div>
 </div>
 
-<div class="section">
-<h3>Kindly Transfer</h3>
+<div class="card">
+<h2>Kindly Transfer</h2>
 <div class="row">
 <label>Base amount</label>
 <input id="transferAmt" type="number">
@@ -105,58 +199,65 @@ hr { border:none; border-top:1px solid #aaa; margin:10px 0; }
 <div class="calc" id="transferCalc"></div>
 </div>
 
-<div class="section">
-<h3>Budget for Next Month</h3>
+<div class="card">
+<h2>Budget for Next Month</h2>
 <div class="calc" id="nextBudgetCalc"></div>
 </div>
 
-<button onclick="generateReport()">Generate Report</button>
+<button class="primary" onclick="generateReport()">Generate Report</button>
 
+</div>
 </div>
 
 <!-- ================= DEFAULT PAGE ================= -->
-<div id="defaultPage" class="hidden">
+<div id="defaultPage" class="hidden container">
+<div class="card">
 <h2>Set Default Values</h2>
 
-<div class="section">
+<div class="row">
 <label>No of houses</label>
 <input id="defHouses" type="number">
 </div>
 
-<div class="section">
+<div class="row">
 <label>Sump water default</label>
 <input id="defSump" type="number">
+</div>
+
+<div class="row">
 <label>Drainage cleaning default</label>
 <input id="defDrain" type="number">
+</div>
+
+<div class="row">
 <label>Common cleaning default</label>
 <input id="defCommon" type="number">
 </div>
 
-<button onclick="saveDefaults()">Save</button>
-<button onclick="backMain()">Back</button>
+<button class="primary" onclick="saveDefaults()">Save</button>
+<button class="footer-btn" onclick="backMain()">Back</button>
+</div>
 </div>
 
 <!-- ================= REPORT PAGE ================= -->
-<div id="reportPage" class="hidden">
-<button onclick="copyReport()">Copy Report</button>
+<div id="reportPage" class="hidden container">
+<button class="footer-btn" onclick="copyReport()">Copy Report</button>
 <pre id="reportText"></pre>
-<button onclick="backMain()">OK</button>
+<button class="footer-btn" onclick="backMain()">OK</button>
 </div>
 
 <script>
-/* ---------- INIT ---------- */
 const $ = id => document.getElementById(id);
 let houses = 4;
 
 function initMonths(){
- let sel = $("monthSelect");
  let d = new Date();
- for(let i=0;i<=12;i++){
-   let dt = new Date(d.getFullYear(), d.getMonth()-i, 1);
-   let opt = document.createElement("option");
-   opt.value = dt.toLocaleString("default",{month:"long",year:"numeric"});
-   opt.textContent = opt.value;
-   sel.appendChild(opt);
+ for(let i=1;i<=13;i++){
+  let dt = new Date(d.getFullYear(), d.getMonth()-i, 1);
+  let opt = document.createElement("option");
+  opt.value = dt.toLocaleString("default",{month:"long",year:"numeric"});
+  opt.textContent = opt.value;
+  $("monthSelect").appendChild(opt);
  }
 }
 
@@ -169,113 +270,114 @@ function loadDefaults(){
 }
 
 function openDefaults(){
- $("mainPage").classList.add("hidden");
- $("defaultPage").classList.remove("hidden");
- $("defHouses").value = houses;
- $("defSump").value = $("sumpAmt").value;
- $("defDrain").value = $("drainAmt").value;
- $("defCommon").value = $("commonAmt").value;
+ mainPage.classList.add("hidden");
+ defaultPage.classList.remove("hidden");
+ defHouses.value = houses;
+ defSump.value = sumpAmt.value;
+ defDrain.value = drainAmt.value;
+ defCommon.value = commonAmt.value;
 }
 
 function saveDefaults(){
- houses = +$("defHouses").value;
+ houses = +defHouses.value;
  localStorage.setItem("houses", houses);
- localStorage.setItem("sump", $("defSump").value);
- localStorage.setItem("drain", $("defDrain").value);
- localStorage.setItem("common", $("defCommon").value);
+ localStorage.setItem("sump", defSump.value);
+ localStorage.setItem("drain", defDrain.value);
+ localStorage.setItem("common", defCommon.value);
  backMain();
  loadDefaults();
 }
 
 function backMain(){
- $("defaultPage").classList.add("hidden");
- $("reportPage").classList.add("hidden");
- $("mainPage").classList.remove("hidden");
+ mainPage.classList.remove("hidden");
+ defaultPage.classList.add("hidden");
+ reportPage.classList.add("hidden");
 }
 
-/* ---------- LIVE CALCULATIONS ---------- */
 document.querySelectorAll("input").forEach(i=>i.oninput=calc);
 
 function calc(){
- let bph=+$("budgetPerHouse").value;
- let prev=+$("prevBalance").value;
+ let bph=+budgetPerHouse.value, prev=+prevBalance.value;
  let budget=(bph*houses)+prev;
- $("budgetCalc").innerText=`(${bph}*${houses}) + ${prev} = ${budget}`;
+ budgetCalc.innerText=`(${bph} * ${houses}) + ${prev} = ${budget}`;
 
- let sump=+$("sumpAmt").value * +$("sumpTimes").value;
- $("sumpCalc").innerText=`${$("sumpAmt").value} * ${$("sumpTimes").value} = ${sump}`;
+ let sump=+sumpAmt.value * +sumpTimes.value;
+ sumpCalc.innerText=`${sumpAmt.value} * ${sumpTimes.value} = ${sump}`;
 
- let drain=+$("drainAmt").value * +$("drainTimes").value;
- $("drainCalc").innerText=`${$("drainAmt").value} * ${$("drainTimes").value} = ${drain}`;
+ let drain=+drainAmt.value * +drainTimes.value;
+ drainCalc.innerText=`${drainAmt.value} * ${drainTimes.value} = ${drain}`;
 
- let common=+$("commonAmt").value;
- let eb=+$("ebAmt").value;
- let misc=+$("miscAmt").value;
-
+ let common=+commonAmt.value, eb=+ebAmt.value, misc=+miscAmt.value;
  let total=sump+drain+common+eb+misc;
- $("totalExpenseCalc").innerText=`Total expenses = ${total}`;
- $("perHouseCalc").innerText=`Per house = ${Math.round(total/houses)}`;
+ totalExpenseCalc.innerText=`Total expenses = ${total}`;
+ perHouseCalc.innerText=`Per house expense = ${Math.round(total/houses)}`;
 
  let diff=budget-total;
  let status=diff>=0?"surplus":"deficit";
  let per=Math.round(Math.abs(diff)/houses);
- $("carryCalc").innerText=`${diff} (${status}), per house ${per}`;
+ carryCalc.innerText=`${diff} (${status}), per house = ${per}`;
 
- let base=+$("transferAmt").value;
- let transfer= status=="deficit"? base+per : base;
- $("transferCalc").innerText=`${base} + ${status=="deficit"?per:0} = ${transfer}`;
+ let base=+transferAmt.value;
+ let transfer=status==="deficit"?base+per:base;
+ transferCalc.innerText=`${base} + ${status==="deficit"?per:0} = ${transfer}`;
 
- let next= base*houses + (status=="surplus"? per*houses:0);
- $("nextBudgetCalc").innerText=`Next month budget = ${next}`;
+ let next=base*houses + (status==="surplus"?per*houses:0);
+ nextBudgetCalc.innerText=`(${base} * ${houses}) + (${status==="surplus"?per*houses:0}) = ${next}`;
 }
 
-/* ---------- REPORT ---------- */
 function generateReport(){
  calc();
- let m=$("monthSelect").value;
- let txt=
+ let m=monthSelect.value;
+ let txt =
 `Maintenance for ${m} month
+
 Budget:
-Budget in hand = (RS. ${$("budgetPerHouse").value}*${houses}) + (RS. ${$("prevBalance").value} prev month)
-= Rs. ${(+$("budgetPerHouse").value*houses)+ +$("prevBalance").value}
+Budget in hand = (RS. ${budgetPerHouse.value}*${houses}) + (RS. ${prevBalance.value} prev month)
+= Rs. ${(budgetPerHouse.value*houses)+ +prevBalance.value}
+
 Expenses:
-sump water = ${$("sumpAmt").value} * ${$("sumpTimes").value}
-= ${$("sumpCalc").innerText.split("=").pop().trim()}
-Drainage cleaning = ${$("drainAmt").value} * ${$("drainTimes").value} = ${$("drainCalc").innerText.split("=").pop().trim()}
-Common area cleaning =${$("commonAmt").value} (paid by Anusha)
-EB bill = ${$("ebAmt").value}
-Miscellaneous = ${$("miscAmt").value}
-Total= ${$("totalExpenseCalc").innerText.split("=").pop().trim()}
-Per house expense = ${$("totalExpenseCalc").innerText.split("=").pop().trim()} / ${houses}
-=Rs. ${Math.round((+$("totalExpenseCalc").innerText.split("=").pop())/houses)}
+sump water = ${sumpAmt.value} * ${sumpTimes.value}
+= ${sumpAmt.value*sumpTimes.value}
+Drainage cleaning = ${drainAmt.value} * ${drainTimes.value} = ${drainAmt.value*drainTimes.value}
+Common area cleaning =${commonAmt.value} (paid by Anusha)
+EB bill = ${ebAmt.value}
+Miscellaneous = ${miscAmt.value}
+Total= ${totalExpenseCalc.innerText.split("=").pop().trim()}
+
+Per house expense = ${totalExpenseCalc.innerText.split("=").pop().trim()} / ${houses}
+=Rs. ${Math.round(totalExpenseCalc.innerText.split("=").pop()/houses)}
+
 Carryover balance for next month(surplus/ deficit)
-= ${(+$("budgetPerHouse").value*houses)+ +$("prevBalance").value} - ${$("totalExpenseCalc").innerText.split("=").pop().trim()}
-= ${$("carryCalc").innerText.split(",")[0].trim()} rupees
-=> ${Math.abs($("carryCalc").innerText.split(",")[0])} / ${houses}
-=  ${$("carryCalc").innerText.includes("surplus")?"surplus":"deficit"}
+= ${(budgetPerHouse.value*houses)+ +prevBalance.value} - ${totalExpenseCalc.innerText.split("=").pop().trim()}
+= ${carryCalc.innerText.split(",")[0]} rupees
+=> ${Math.abs(carryCalc.innerText.split(",")[0])} / ${houses}
+=  ${carryCalc.innerText.includes("surplus")?"surplus":"deficit"}
+
 KINDLY TRANSFER:
 --------------------------------
-${$("transferAmt").value} + ${$("carryCalc").innerText.includes("deficit")?Math.round(Math.abs($("carryCalc").innerText.split(",")[0])/houses):0}
-= ${$("transferCalc").innerText.split("=").pop().trim()} rupees per house.
+${transferAmt.value} + ${carryCalc.innerText.includes("deficit")?Math.round(Math.abs(carryCalc.innerText.split(",")[0])/houses):0}
+= ${transferCalc.innerText.split("=").pop().trim()} rupees per house.
 _______________________________
+
 Budget for Next month in hand.
-(${ $("transferAmt").value}* ${houses}) + (${houses}*${$("carryCalc").innerText.includes("surplus")?Math.round(Math.abs($("carryCalc").innerText.split(",")[0])/houses):0})
-= ${$("transferAmt").value*houses} + ${$("carryCalc").innerText.includes("surplus")?Math.round(Math.abs($("carryCalc").innerText.split(",")[0])):0}
-= ${$("nextBudgetCalc").innerText.split("=").pop().trim()}
-Note: Anusha needs pay ${$("transferCalc").innerText.split("=").pop().trim()-$("commonAmt").value} only.
+(${transferAmt.value}* ${houses}) + (${houses}*${carryCalc.innerText.includes("surplus")?Math.round(Math.abs(carryCalc.innerText.split(",")[0])/houses):0})
+= ${transferAmt.value*houses} + ${carryCalc.innerText.includes("surplus")?Math.round(Math.abs(carryCalc.innerText.split(",")[0])):0}
+= ${nextBudgetCalc.innerText.split("=").pop().trim()}
+
+Note: Anusha needs pay ${transferCalc.innerText.split("=").pop().trim()-commonAmt.value} only.
+
 Thanks!
 `;
- $("reportText").textContent=txt;
- $("mainPage").classList.add("hidden");
- $("reportPage").classList.remove("hidden");
+ reportText.textContent=txt;
+ mainPage.classList.add("hidden");
+ reportPage.classList.remove("hidden");
 }
 
 function copyReport(){
- navigator.clipboard.writeText($("reportText").textContent);
- alert("Copied");
+ navigator.clipboard.writeText(reportText.textContent);
+ alert("Report copied");
 }
 
-/* ---------- START ---------- */
 initMonths();
 loadDefaults();
 calc();
