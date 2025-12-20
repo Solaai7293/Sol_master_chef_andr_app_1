@@ -2,80 +2,22 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Apartment Maintenance Calculator</title>
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-body {
-  font-family: Arial, sans-serif;
-  background: #f4f4f4;
-  margin: 0;
-  padding: 12px;
-}
-h2, h3 {
-  margin: 6px 0;
-}
-.section {
-  background: #ffffff;
-  padding: 10px;
-  margin-bottom: 12px;
-  border-radius: 6px;
-}
-label {
-  font-size: 14px;
-  display: block;
-  margin-top: 6px;
-}
-input, select {
-  width: 100%;
-  padding: 6px;
-  margin-top: 4px;
-}
-.row {
-  display: flex;
-  gap: 6px;
-}
-.row input {
-  flex: 1;
-}
-.calc {
-  font-size: 13px;
-  margin-top: 4px;
-  color: #333;
-  white-space: pre-line;
-}
-button {
-  width: 100%;
-  padding: 12px;
-  margin-top: 10px;
-  border: none;
-  border-radius: 6px;
-  background: #1976d2;
-  color: white;
-  font-size: 16px;
-}
-.small-btn {
-  width: auto;
-  padding: 6px 10px;
-  font-size: 14px;
-}
-.secondary {
-  background: #555;
-}
-.hidden {
-  display: none;
-}
-pre {
-  white-space: pre-wrap;
-  background: white;
-  padding: 10px;
-  border-radius: 6px;
-}
-.top-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+body { font-family: Arial, sans-serif; margin: 10px; background:#f4f4f4; }
+h2, h3 { margin-top:20px; }
+.section { background:#fff; padding:12px; margin-bottom:12px; border-radius:6px; }
+.row { display:flex; gap:10px; margin-bottom:8px; }
+.row label { flex:1; }
+.row input, select { flex:1; padding:6px; }
+.calc { background:#eef; padding:8px; margin:6px 0; border-radius:4px; font-size:14px; }
+button { padding:10px; width:100%; margin-top:10px; }
+.topbar { display:flex; justify-content:space-between; align-items:center; }
+pre { white-space:pre-wrap; font-family:monospace; }
+.hidden { display:none; }
+.small { font-size:13px; color:#444; }
+hr { border:none; border-top:1px solid #aaa; margin:10px 0; }
 </style>
 </head>
 
@@ -83,273 +25,260 @@ pre {
 
 <!-- ================= MAIN PAGE ================= -->
 <div id="mainPage">
-  <div class="top-bar">
-    <h2>Maintenance Calculator</h2>
-    <button class="small-btn" onclick="openDefaults()">Set Default</button>
-  </div>
 
-  <div class="section">
-    <label>Month</label>
-    <select id="monthSelect" onchange="updateCalculations()"></select>
-  </div>
+<div class="topbar">
+<h2>Maintenance Calculator</h2>
+<button onclick="openDefaults()">Set Default</button>
+</div>
 
-  <div class="section">
-    <h3>Budget</h3>
-    <label>Budget per house</label>
-    <input type="number" id="budgetPerHouse" oninput="updateCalculations()">
-    <label>Previous month balance</label>
-    <input type="number" id="prevBalance" oninput="updateCalculations()">
-    <div id="budgetCalc" class="calc"></div>
-  </div>
+<div class="section">
+<label>Select Month:</label>
+<select id="monthSelect"></select>
+</div>
 
-  <div class="section">
-    <h3>Expenses</h3>
+<div class="section">
+<h3>Budget</h3>
+<div class="row">
+<label>Amount per house</label>
+<input id="budgetPerHouse" type="number">
+</div>
+<div class="row">
+<label>Previous balance</label>
+<input id="prevBalance" type="number">
+</div>
+<div class="calc" id="budgetCalc"></div>
+</div>
 
-    <label>Sump water</label>
-    <div class="row">
-      <input type="number" id="sumpAmt" oninput="updateCalculations()">
-      <input type="number" id="sumpTimes" placeholder="times" oninput="updateCalculations()">
-    </div>
-    <div id="sumpCalc" class="calc"></div>
+<div class="section">
+<h3>Expenses</h3>
 
-    <label>Drainage cleaning</label>
-    <div class="row">
-      <input type="number" id="drainAmt" oninput="updateCalculations()">
-      <input type="number" id="drainTimes" placeholder="times" oninput="updateCalculations()">
-    </div>
-    <div id="drainCalc" class="calc"></div>
+<div class="row">
+<label>Sump water amount</label>
+<input id="sumpAmt" type="number">
+</div>
+<div class="row">
+<label>No of times</label>
+<input id="sumpTimes" type="number">
+</div>
+<div class="calc" id="sumpCalc"></div>
 
-    <label>Common area cleaning (paid by Anusha)</label>
-    <input type="number" id="commonCleaning" oninput="updateCalculations()">
-    <div id="commonCalc" class="calc"></div>
+<div class="row">
+<label>Drainage cleaning amount</label>
+<input id="drainAmt" type="number">
+</div>
+<div class="row">
+<label>No of times</label>
+<input id="drainTimes" type="number">
+</div>
+<div class="calc" id="drainCalc"></div>
 
-    <label>EB bill</label>
-    <input type="number" id="ebBill" oninput="updateCalculations()">
-    <div id="ebCalc" class="calc"></div>
+<div class="row">
+<label>Common area cleaning (paid by Anusha)</label>
+<input id="commonAmt" type="number">
+</div>
 
-    <label>Miscellaneous</label>
-    <input type="number" id="misc" oninput="updateCalculations()">
-    <div id="miscCalc" class="calc"></div>
+<div class="row">
+<label>EB bill</label>
+<input id="ebAmt" type="number">
+</div>
 
-    <div id="totalCalc" class="calc" style="font-weight:bold;"></div>
-  </div>
+<div class="row">
+<label>Miscellaneous</label>
+<input id="miscAmt" type="number">
+</div>
 
-  <div class="section">
-    <h3>Kindly Transfer</h3>
-    <label>Base amount</label>
-    <input type="number" id="transferAmt" oninput="updateCalculations()">
-    <div id="transferCalc" class="calc"></div>
-  </div>
+<div class="calc" id="totalExpenseCalc"></div>
+<div class="calc" id="perHouseCalc"></div>
+</div>
 
-  <div class="section">
-    <h3>Carryover & Next Month</h3>
-    <div id="summaryCalc" class="calc"></div>
-  </div>
+<div class="section">
+<h3>Carryover Balance</h3>
+<div class="calc" id="carryCalc"></div>
+</div>
 
-  <button onclick="generateReport()">Generate Report</button>
+<div class="section">
+<h3>Kindly Transfer</h3>
+<div class="row">
+<label>Base amount</label>
+<input id="transferAmt" type="number">
+</div>
+<div class="calc" id="transferCalc"></div>
+</div>
+
+<div class="section">
+<h3>Budget for Next Month</h3>
+<div class="calc" id="nextBudgetCalc"></div>
+</div>
+
+<button onclick="generateReport()">Generate Report</button>
+
 </div>
 
 <!-- ================= DEFAULT PAGE ================= -->
 <div id="defaultPage" class="hidden">
-  <h2>Set Default Values</h2>
+<h2>Set Default Values</h2>
 
-  <div class="section">
-    <label>No of houses</label>
-    <input type="number" id="defHouses">
-  </div>
+<div class="section">
+<label>No of houses</label>
+<input id="defHouses" type="number">
+</div>
 
-  <div class="section">
-    <label>Sump water amount</label>
-    <input type="number" id="defSump">
-    <label>Drainage cleaning amount</label>
-    <input type="number" id="defDrain">
-    <label>Common area cleaning amount</label>
-    <input type="number" id="defCommon">
-  </div>
+<div class="section">
+<label>Sump water default</label>
+<input id="defSump" type="number">
+<label>Drainage cleaning default</label>
+<input id="defDrain" type="number">
+<label>Common cleaning default</label>
+<input id="defCommon" type="number">
+</div>
 
-  <button onclick="saveDefaults()">OK</button>
-  <button class="secondary" onclick="backToMain()">Back</button>
+<button onclick="saveDefaults()">Save</button>
+<button onclick="backMain()">Back</button>
 </div>
 
 <!-- ================= REPORT PAGE ================= -->
 <div id="reportPage" class="hidden">
-  <button class="small-btn" onclick="copyReport()">Copy Report</button>
-  <pre id="reportText"></pre>
-  <button onclick="backToMain()">OK</button>
+<button onclick="copyReport()">Copy Report</button>
+<pre id="reportText"></pre>
+<button onclick="backMain()">OK</button>
 </div>
 
 <script>
+/* ---------- INIT ---------- */
 const $ = id => document.getElementById(id);
+let houses = 4;
 
-function initMonths() {
-  const now = new Date();
-  for (let i = 0; i <= 12; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const text = d.toLocaleString("default", { month: "long", year: "numeric" });
-    const opt = document.createElement("option");
-    opt.value = text;
-    opt.textContent = text;
-    if (i === 1) opt.selected = true;
-    $("monthSelect").appendChild(opt);
-  }
+function initMonths(){
+ let sel = $("monthSelect");
+ let d = new Date();
+ for(let i=0;i<=12;i++){
+   let dt = new Date(d.getFullYear(), d.getMonth()-i, 1);
+   let opt = document.createElement("option");
+   opt.value = dt.toLocaleString("default",{month:"long",year:"numeric"});
+   opt.textContent = opt.value;
+   sel.appendChild(opt);
+ }
 }
 
-function loadDefaults() {
-  $("defHouses").value = localStorage.houses || 4;
-  $("defSump").value = localStorage.sump || 0;
-  $("defDrain").value = localStorage.drain || 0;
-  $("defCommon").value = localStorage.common || 0;
-
-  $("sumpAmt").value = localStorage.sump || 0;
-  $("drainAmt").value = localStorage.drain || 0;
-  $("commonCleaning").value = localStorage.common || 0;
-  updateCalculations();
+function loadDefaults(){
+ houses = +localStorage.getItem("houses") || 4;
+ $("budgetPerHouse").value = localStorage.getItem("budget") || 0;
+ $("sumpAmt").value = localStorage.getItem("sump") || 0;
+ $("drainAmt").value = localStorage.getItem("drain") || 0;
+ $("commonAmt").value = localStorage.getItem("common") || 0;
 }
 
-function openDefaults() {
-  loadDefaults();
-  mainPage.classList.add("hidden");
-  defaultPage.classList.remove("hidden");
+function openDefaults(){
+ $("mainPage").classList.add("hidden");
+ $("defaultPage").classList.remove("hidden");
+ $("defHouses").value = houses;
+ $("defSump").value = $("sumpAmt").value;
+ $("defDrain").value = $("drainAmt").value;
+ $("defCommon").value = $("commonAmt").value;
 }
 
-function saveDefaults() {
-  localStorage.houses = $("defHouses").value;
-  localStorage.sump = $("defSump").value;
-  localStorage.drain = $("defDrain").value;
-  localStorage.common = $("defCommon").value;
-  backToMain();
+function saveDefaults(){
+ houses = +$("defHouses").value;
+ localStorage.setItem("houses", houses);
+ localStorage.setItem("sump", $("defSump").value);
+ localStorage.setItem("drain", $("defDrain").value);
+ localStorage.setItem("common", $("defCommon").value);
+ backMain();
+ loadDefaults();
 }
 
-function backToMain() {
-  defaultPage.classList.add("hidden");
-  reportPage.classList.add("hidden");
-  mainPage.classList.remove("hidden");
-  updateCalculations();
+function backMain(){
+ $("defaultPage").classList.add("hidden");
+ $("reportPage").classList.add("hidden");
+ $("mainPage").classList.remove("hidden");
 }
 
-function updateCalculations() {
-  const houses = Number(localStorage.houses || 4);
+/* ---------- LIVE CALCULATIONS ---------- */
+document.querySelectorAll("input").forEach(i=>i.oninput=calc);
 
-  const bph = +$("budgetPerHouse").value || 0;
-  const prev = +$("prevBalance").value || 0;
-  const budget = bph * houses + prev;
+function calc(){
+ let bph=+$("budgetPerHouse").value;
+ let prev=+$("prevBalance").value;
+ let budget=(bph*houses)+prev;
+ $("budgetCalc").innerText=`(${bph}*${houses}) + ${prev} = ${budget}`;
 
-  $("budgetCalc").textContent =
-    `Budget in hand = (${bph}*${houses}) + (${prev} prev month)\n= Rs. ${budget}`;
+ let sump=+$("sumpAmt").value * +$("sumpTimes").value;
+ $("sumpCalc").innerText=`${$("sumpAmt").value} * ${$("sumpTimes").value} = ${sump}`;
 
-  const sump = (+$("sumpAmt").value || 0) * (+$("sumpTimes").value || 0);
-  const drain = (+$("drainAmt").value || 0) * (+$("drainTimes").value || 0);
-  const common = +$("commonCleaning").value || 0;
-  const eb = +$("ebBill").value || 0;
-  const misc = +$("misc").value || 0;
+ let drain=+$("drainAmt").value * +$("drainTimes").value;
+ $("drainCalc").innerText=`${$("drainAmt").value} * ${$("drainTimes").value} = ${drain}`;
 
-  $("sumpCalc").textContent = `= ${sump}`;
-  $("drainCalc").textContent = `= ${drain}`;
-  $("commonCalc").textContent = `= ${common}`;
-  $("ebCalc").textContent = `= ${eb}`;
-  $("miscCalc").textContent = `= ${misc}`;
+ let common=+$("commonAmt").value;
+ let eb=+$("ebAmt").value;
+ let misc=+$("miscAmt").value;
 
-  const total = sump + drain + common + eb + misc;
-  const perHouse = total / houses;
+ let total=sump+drain+common+eb+misc;
+ $("totalExpenseCalc").innerText=`Total expenses = ${total}`;
+ $("perHouseCalc").innerText=`Per house = ${Math.round(total/houses)}`;
 
-  $("totalCalc").textContent =
-    `Total = ${total}\nPer house expense = ${total} / ${houses}\n= Rs. ${Math.round(perHouse)}`;
+ let diff=budget-total;
+ let status=diff>=0?"surplus":"deficit";
+ let per=Math.round(Math.abs(diff)/houses);
+ $("carryCalc").innerText=`${diff} (${status}), per house ${per}`;
 
-  const diff = budget - total;
-  const carry = Math.abs(diff / houses);
-  const surplus = diff >= 0;
+ let base=+$("transferAmt").value;
+ let transfer= status=="deficit"? base+per : base;
+ $("transferCalc").innerText=`${base} + ${status=="deficit"?per:0} = ${transfer}`;
 
-  const base = +$("transferAmt").value || 0;
-  const finalTransfer = base + (surplus ? 0 : carry);
-
-  const nextBudget = (base * houses) + (surplus ? diff : 0);
-  const anushaPay = finalTransfer - common;
-
-  $("transferCalc").textContent =
-    `${base} + ${surplus ? 0 : carry}\n= ${finalTransfer} rupees per house.`;
-
-  $("summaryCalc").textContent =
-    `Carryover balance = ${Math.abs(diff)} (${surplus ? "surplus" : "deficit"})\n` +
-    `Per person carryover = ${carry}\n\n` +
-    `Budget for next month = ${nextBudget}\n` +
-    `Note: Anusha needs pay ${anushaPay} only.`;
+ let next= base*houses + (status=="surplus"? per*houses:0);
+ $("nextBudgetCalc").innerText=`Next month budget = ${next}`;
 }
 
-function generateReport() {
-  updateCalculations();
-
-  const houses = Number(localStorage.houses || 4);
-  const bph = +$("budgetPerHouse").value || 0;
-  const prev = +$("prevBalance").value || 0;
-  const budget = bph * houses + prev;
-
-  const sumpAmt = +$("sumpAmt").value || 0;
-  const sumpTimes = +$("sumpTimes").value || 0;
-  const sump = sumpAmt * sumpTimes;
-
-  const drainAmt = +$("drainAmt").value || 0;
-  const drainTimes = +$("drainTimes").value || 0;
-  const drain = drainAmt * drainTimes;
-
-  const common = +$("commonCleaning").value || 0;
-  const eb = +$("ebBill").value || 0;
-  const misc = +$("misc").value || 0;
-
-  const total = sump + drain + common + eb + misc;
-  const perHouse = Math.round(total / houses);
-
-  const diff = budget - total;
-  const carry = Math.round(Math.abs(diff) / houses);
-  const surplus = diff >= 0;
-
-  const base = +$("transferAmt").value || 0;
-  const finalTransfer = base + (surplus ? 0 : carry);
-  const nextBudget = (base * houses) + (surplus ? diff : 0);
-  const anushaPay = finalTransfer - common;
-
-  $("reportText").textContent =
-`Maintenance for ${$("monthSelect").value} month
+/* ---------- REPORT ---------- */
+function generateReport(){
+ calc();
+ let m=$("monthSelect").value;
+ let txt=
+`Maintenance for ${m} month
 Budget:
-Budget in hand = (RS. ${bph}*${houses}) + (RS. ${prev} prev month)
-= Rs. ${budget}
+Budget in hand = (RS. ${$("budgetPerHouse").value}*${houses}) + (RS. ${$("prevBalance").value} prev month)
+= Rs. ${(+$("budgetPerHouse").value*houses)+ +$("prevBalance").value}
 Expenses:
-sump water = ${sumpAmt} * ${sumpTimes}
-= ${sump}
-Drainage cleaning = ${drainAmt} * ${drainTimes} = ${drain}
-Common area cleaning =${common} (paid by Anusha)
-EB bill = ${eb}
-Miscellaneous = ${misc}
-Total= ${total}
-Per house expense = ${total} / ${houses}
-=Rs. ${perHouse}
+sump water = ${$("sumpAmt").value} * ${$("sumpTimes").value}
+= ${$("sumpCalc").innerText.split("=").pop().trim()}
+Drainage cleaning = ${$("drainAmt").value} * ${$("drainTimes").value} = ${$("drainCalc").innerText.split("=").pop().trim()}
+Common area cleaning =${$("commonAmt").value} (paid by Anusha)
+EB bill = ${$("ebAmt").value}
+Miscellaneous = ${$("miscAmt").value}
+Total= ${$("totalExpenseCalc").innerText.split("=").pop().trim()}
+Per house expense = ${$("totalExpenseCalc").innerText.split("=").pop().trim()} / ${houses}
+=Rs. ${Math.round((+$("totalExpenseCalc").innerText.split("=").pop())/houses)}
 Carryover balance for next month(surplus/ deficit)
-= ${budget} - ${total}
-= ${Math.abs(diff)} rupees
-=> ${Math.abs(diff)} / ${houses}
-= ${carry} ${surplus ? "surplus" : "deficit"}
+= ${(+$("budgetPerHouse").value*houses)+ +$("prevBalance").value} - ${$("totalExpenseCalc").innerText.split("=").pop().trim()}
+= ${$("carryCalc").innerText.split(",")[0].trim()} rupees
+=> ${Math.abs($("carryCalc").innerText.split(",")[0])} / ${houses}
+=  ${$("carryCalc").innerText.includes("surplus")?"surplus":"deficit"}
 KINDLY TRANSFER:
 --------------------------------
-${base} + ${surplus ? 0 : carry}
-= ${finalTransfer} rupees per house.
+${$("transferAmt").value} + ${$("carryCalc").innerText.includes("deficit")?Math.round(Math.abs($("carryCalc").innerText.split(",")[0])/houses):0}
+= ${$("transferCalc").innerText.split("=").pop().trim()} rupees per house.
 _______________________________
 Budget for Next month in hand.
-(${base}* ${houses}) + (${surplus ? carry : 0}*${houses})
-= ${base * houses} + ${surplus ? diff : 0}
-= ${nextBudget}
-Note: Anusha needs pay ${anushaPay} only.
-Thanks!`;
-
-  mainPage.classList.add("hidden");
-  reportPage.classList.remove("hidden");
+(${ $("transferAmt").value}* ${houses}) + (${houses}*${$("carryCalc").innerText.includes("surplus")?Math.round(Math.abs($("carryCalc").innerText.split(",")[0])/houses):0})
+= ${$("transferAmt").value*houses} + ${$("carryCalc").innerText.includes("surplus")?Math.round(Math.abs($("carryCalc").innerText.split(",")[0])):0}
+= ${$("nextBudgetCalc").innerText.split("=").pop().trim()}
+Note: Anusha needs pay ${$("transferCalc").innerText.split("=").pop().trim()-$("commonAmt").value} only.
+Thanks!
+`;
+ $("reportText").textContent=txt;
+ $("mainPage").classList.add("hidden");
+ $("reportPage").classList.remove("hidden");
 }
 
-function copyReport() {
-  navigator.clipboard.writeText($("reportText").textContent);
-  alert("Report copied");
+function copyReport(){
+ navigator.clipboard.writeText($("reportText").textContent);
+ alert("Copied");
 }
 
+/* ---------- START ---------- */
 initMonths();
 loadDefaults();
+calc();
 </script>
 
 </body>
