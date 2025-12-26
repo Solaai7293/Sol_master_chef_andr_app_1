@@ -355,7 +355,7 @@ Carryover balance for next month(surplus/ deficit)
 = ${(budgetPerHouse.value*houses)+ +prevBalance.value} - ${totalExpenseCalc.innerText.split("=").pop().trim()}
 = ${carryCalc.innerText.split(",")[0]} rupees
 => ${Math.abs(parseInt(carryCalc.innerText.split(",")[0], 10))} / ${houses}
-=  ${Math.abs(parseInt(carryCalc.innerText.split(",")[0], 10))/houses} ${carryCalc.innerText.includes("surplus")?"surplus":"deficit"}
+=  ${Math.round(Math.abs(parseInt(carryCalc.innerText.split(",")[0], 10)))/houses} ${carryCalc.innerText.includes("surplus")?"surplus":"deficit"}
 
 KINDLY TRANSFER:
 --------------------------------
