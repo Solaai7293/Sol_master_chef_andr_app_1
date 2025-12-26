@@ -11,6 +11,7 @@ body {
   font-family: system-ui, Arial, sans-serif;
   background: #f2f2f2;
 }
+
 header {
   background: #1976d2;
   color: #fff;
@@ -19,7 +20,12 @@ header {
   justify-content: space-between;
   align-items: center;
 }
-header h1 { font-size: 18px; margin: 0; }
+
+header h1 {
+  font-size: 18px;
+  margin: 0;
+}
+
 header button {
   background: #fff;
   color: #1976d2;
@@ -28,7 +34,11 @@ header button {
   border-radius: 4px;
   font-weight: bold;
 }
-.container { padding: 12px; }
+
+.container {
+  padding: 12px;
+}
+
 .card {
   background: #fff;
   padding: 14px;
@@ -36,15 +46,31 @@ header button {
   border-radius: 8px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
+
 .card h2 {
   margin-top: 0;
   font-size: 16px;
   border-bottom: 1px solid #ddd;
   padding-bottom: 6px;
 }
-.row { display: flex; gap: 10px; margin-bottom: 10px; }
-.row label { flex: 1; font-size: 14px; }
-.row input, select { flex: 1; padding: 8px; font-size: 14px; }
+
+.row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.row label {
+  flex: 1;
+  font-size: 14px;
+}
+
+.row input, select {
+  flex: 1;
+  padding: 8px;
+  font-size: 14px;
+}
+
 .calc {
   background: #eef4ff;
   padding: 8px;
@@ -52,7 +78,12 @@ header button {
   font-size: 13px;
   margin-top: 6px;
 }
-.total { background: #e3f2fd; font-weight: bold; }
+
+.total {
+  background: #e3f2fd;
+  font-weight: bold;
+}
+
 button.primary {
   width: 100%;
   padding: 14px;
@@ -62,7 +93,9 @@ button.primary {
   border: none;
   border-radius: 6px;
 }
+
 .hidden { display: none; }
+
 pre {
   white-space: pre-wrap;
   font-family: monospace;
@@ -70,6 +103,7 @@ pre {
   padding: 14px;
   border-radius: 6px;
 }
+
 .footer-btn {
   width: 100%;
   padding: 12px;
@@ -77,11 +111,17 @@ pre {
   font-size: 16px;
 }
 </style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1976d2">
+<link rel="apple-touch-icon" href="icon-192.png">
+  
 </head>
 
 <body>
 
+<!-- ================= MAIN PAGE ================= -->
 <div id="mainPage">
+
 <header>
 <h1>Maintenance Calculator</h1>
 <button onclick="openDefaults()">Set Default</button>
@@ -169,33 +209,41 @@ pre {
 </div>
 
 <button class="primary" onclick="generateReport()">Generate Report</button>
+
 </div>
 </div>
 
+<!-- ================= DEFAULT PAGE ================= -->
 <div id="defaultPage" class="hidden container">
 <div class="card">
 <h2>Set Default Values</h2>
+
 <div class="row">
 <label>No of houses</label>
 <input id="defHouses" type="number">
 </div>
+
 <div class="row">
 <label>Sump water default</label>
 <input id="defSump" type="number">
 </div>
+
 <div class="row">
 <label>Drainage cleaning default</label>
 <input id="defDrain" type="number">
 </div>
+
 <div class="row">
 <label>Common cleaning default</label>
 <input id="defCommon" type="number">
 </div>
+
 <button class="primary" onclick="saveDefaults()">Save</button>
 <button class="footer-btn" onclick="backMain()">Back</button>
 </div>
 </div>
 
+<!-- ================= REPORT PAGE ================= -->
 <div id="reportPage" class="hidden container">
 <button class="footer-btn" onclick="copyReport()">Copy Report</button>
 <pre id="reportText"></pre>
@@ -206,11 +254,6 @@ pre {
 const $ = id => document.getElementById(id);
 let houses = 4;
 
-// GLOBAL values to avoid NaN
-let carryDiff = 0;
-let carryStatus = "surplus";
-let carryPerHouse = 0;
-
 function initMonths(){
  let d = new Date();
  for(let i=1;i<=13;i++){
@@ -218,15 +261,16 @@ function initMonths(){
   let opt = document.createElement("option");
   opt.value = dt.toLocaleString("default",{month:"long",year:"numeric"});
   opt.textContent = opt.value;
-  monthSelect.appendChild(opt);
+  $("monthSelect").appendChild(opt);
  }
 }
 
 function loadDefaults(){
  houses = +localStorage.getItem("houses") || 4;
- sumpAmt.value = localStorage.getItem("sump") || 0;
- drainAmt.value = localStorage.getItem("drain") || 0;
- commonAmt.value = localStorage.getItem("common") || 0;
+ $("budgetPerHouse").value = localStorage.getItem("budget") || 0;
+ $("sumpAmt").value = localStorage.getItem("sump") || 0;
+ $("drainAmt").value = localStorage.getItem("drain") || 0;
+ $("commonAmt").value = localStorage.getItem("common") || 0;
 }
 
 function openDefaults(){
@@ -267,36 +311,68 @@ function calc(){
  let drain=+drainAmt.value * +drainTimes.value;
  drainCalc.innerText=`${drainAmt.value} * ${drainTimes.value} = ${drain}`;
 
- let total=sump+drain+(+commonAmt.value)+(+ebAmt.value)+(+miscAmt.value);
+ let common=+commonAmt.value, eb=+ebAmt.value, misc=+miscAmt.value;
+ let total=sump+drain+common+eb+misc;
  totalExpenseCalc.innerText=`Total expenses = ${total}`;
  perHouseCalc.innerText=`Per house expense = ${Math.round(total/houses)}`;
 
- carryDiff = budget - total;
- carryStatus = carryDiff >= 0 ? "surplus" : "deficit";
- carryPerHouse = Math.round(Math.abs(carryDiff) / houses);
-
- carryCalc.innerText = `${carryDiff} (${carryStatus}), per house = ${carryPerHouse}`;
+ let diff=budget-total;
+ let status=diff>=0?"surplus":"deficit";
+ let per=Math.round(Math.abs(diff)/houses);
+ carryCalc.innerText=`${diff} (${status}), per house = ${per}`;
 
  let base=+transferAmt.value;
- let transfer = carryStatus==="deficit" ? base + carryPerHouse : base;
- transferCalc.innerText=`${base} + ${carryStatus==="deficit"?carryPerHouse:0} = ${transfer}`;
+ let transfer=status==="deficit"?base+per:base;
+ transferCalc.innerText=`${base} + ${status==="deficit"?per:0} = ${transfer}`;
 
- let next = base*houses + (carryStatus==="surplus"?carryPerHouse*houses:0);
- nextBudgetCalc.innerText=`(${base} * ${houses}) + (${carryStatus==="surplus"?carryPerHouse*houses:0}) = ${next}`;
+ let next=base*houses + (status==="surplus"?per*houses:0);
+ nextBudgetCalc.innerText=`(${base} * ${houses}) + (${status==="surplus"?per*houses:0}) = ${next}`;
 }
 
 function generateReport(){
  calc();
- let m = monthSelect.value;
-
- reportText.textContent =
+ let m=monthSelect.value;
+ let txt =
 `Maintenance for ${m} month
 
-Carryover balance for next month (surplus/deficit)
-= ${carryDiff} (${carryStatus}) rupees
-=> ${carryPerHouse} / ${houses}
-= ${carryStatus}
+Budget:
+Budget in hand = (RS. ${budgetPerHouse.value}*${houses}) + (RS. ${prevBalance.value} prev month)
+= Rs. ${(budgetPerHouse.value*houses)+ +prevBalance.value}
+
+Expenses:
+sump water = ${sumpAmt.value} * ${sumpTimes.value}
+= ${sumpAmt.value*sumpTimes.value}
+Drainage cleaning = ${drainAmt.value} * ${drainTimes.value} = ${drainAmt.value*drainTimes.value}
+Common area cleaning =${commonAmt.value} (paid by Anusha)
+EB bill = ${ebAmt.value}
+Miscellaneous = ${miscAmt.value}
+Total= ${totalExpenseCalc.innerText.split("=").pop().trim()}
+
+Per house expense = ${totalExpenseCalc.innerText.split("=").pop().trim()} / ${houses}
+=Rs. ${Math.round(totalExpenseCalc.innerText.split("=").pop()/houses)}
+
+Carryover balance for next month(surplus/ deficit)
+= ${(budgetPerHouse.value*houses)+ +prevBalance.value} - ${totalExpenseCalc.innerText.split("=").pop().trim()}
+= ${carryCalc.innerText.split(",")[0]} rupees
+=> ${Math.abs(parseInt(carryCalc.innerText.split(",")[0], 10))} / ${houses}
+=  ${carryCalc.innerText.includes("surplus")?"surplus":"deficit"}
+
+KINDLY TRANSFER:
+--------------------------------
+${transferAmt.value} + ${carryCalc.innerText.includes("deficit")?Math.round(Math.abs(carryCalc.innerText.split(",")[0])/houses):0}
+= ${transferCalc.innerText.split("=").pop().trim()} rupees per house.
+_______________________________
+
+Budget for Next month in hand.
+(${transferAmt.value}* ${houses}) + (${houses}*${carryCalc.innerText.includes("surplus")?Math.round(Math.abs(carryCalc.innerText.split(",")[0])/houses):0})
+= ${transferAmt.value*houses} + ${carryCalc.innerText.includes("surplus")?Math.round(Math.abs(carryCalc.innerText.split(",")[0])):0}
+= ${nextBudgetCalc.innerText.split("=").pop().trim()}
+
+Note: Anusha needs pay ${transferCalc.innerText.split("=").pop().trim()-commonAmt.value} only.
+
+Thanks!
 `;
+ reportText.textContent=txt;
  mainPage.classList.add("hidden");
  reportPage.classList.remove("hidden");
 }
