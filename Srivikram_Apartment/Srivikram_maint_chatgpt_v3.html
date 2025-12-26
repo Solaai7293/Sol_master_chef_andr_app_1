@@ -345,7 +345,7 @@ sump water = ${sumpAmt.value} * ${sumpTimes.value}
 Drainage cleaning = ${drainAmt.value} * ${drainTimes.value} = ${drainAmt.value*drainTimes.value}
 Common area cleaning =${commonAmt.value} (paid by Anusha)
 EB bill = ${ebAmt.value}
-Miscellaneous = ${miscAmt.value || 0}
+Miscellaneous = ${miscAmt.value}
 Total= ${totalExpenseCalc.innerText.split("=").pop().trim()}
 
 Per house expense = ${totalExpenseCalc.innerText.split("=").pop().trim()} / ${houses}
