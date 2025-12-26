@@ -360,8 +360,7 @@ Carryover balance for next month(surplus/ deficit)
 KINDLY TRANSFER:
 --------------------------------
 ${transferAmt.value} + ${carryCalc.innerText.includes("deficit")?Math.round(Math.abs(parseInt(carryCalc.innerText.split(",")[0], 10))/houses):0}
-= ${transferCalc.innerText.split("=").pop().trim()} rupees per house.
-= ${transferAmt.value + (carryCalc.innerText.includes("deficit")?Math.round(Math.abs(parseInt(carryCalc.innerText.split(",")[0], 10))/houses):0)} rupees per house.
+= ${Number(transferAmt.value) + (carryCalc.innerText.includes("deficit")?Math.round(Math.abs(parseInt(carryCalc.innerText.split(",")[0], 10))/houses):0)} rupees per house.
 _______________________________
 
 Budget for Next month in hand.
