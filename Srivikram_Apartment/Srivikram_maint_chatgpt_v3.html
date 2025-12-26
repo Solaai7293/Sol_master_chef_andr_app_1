@@ -345,7 +345,7 @@ sump water = ${sumpAmt.value} * ${sumpTimes.value}
 Drainage cleaning = ${drainAmt.value} * ${drainTimes.value} = ${drainAmt.value*drainTimes.value}
 Common area cleaning =${commonAmt.value} (paid by Anusha)
 EB bill = ${ebAmt.value}
-Miscellaneous = ${miscAmt.value}
+Miscellaneous = ${Numeric(miscAmt.value) || 0}
 Total= ${totalExpenseCalc.innerText.split("=").pop().trim()}
 
 Per house expense = ${totalExpenseCalc.innerText.split("=").pop().trim()} / ${houses}
@@ -355,18 +355,19 @@ Carryover balance for next month(surplus/ deficit)
 = ${(budgetPerHouse.value*houses)+ +prevBalance.value} - ${totalExpenseCalc.innerText.split("=").pop().trim()}
 = ${carryCalc.innerText.split(",")[0]} rupees
 => ${Math.abs(parseInt(carryCalc.innerText.split(",")[0], 10))} / ${houses}
-=  ${Math.floor(Math.abs(parseInt(carryCalc.innerText.split(",")[0], 10))/houses)} ${carryCalc.innerText.includes("surplus")?"surplus":"deficit"}
+=  ${Math.round(Math.abs(parseInt(carryCalc.innerText.split(",")[0], 10))/houses)} ${carryCalc.innerText.includes("surplus")?"surplus":"deficit"}
 
 KINDLY TRANSFER:
 --------------------------------
-${transferAmt.value} + ${carryCalc.innerText.includes("deficit")?Math.round(Math.abs(carryCalc.innerText.split(",")[0])/houses):0}
+${transferAmt.value} + ${carryCalc.innerText.includes("deficit")?Math.round(Math.abs(parseInt(carryCalc.innerText.split(",")[0], 10))/houses):0}
 = ${transferCalc.innerText.split("=").pop().trim()} rupees per house.
+= ${transferAmt.value + (carryCalc.innerText.includes("deficit")?Math.round(Math.abs(parseInt(carryCalc.innerText.split(",")[0], 10))/houses):0)} rupees per house.
 _______________________________
 
 Budget for Next month in hand.
-(${transferAmt.value}* ${houses}) + (${houses}*${carryCalc.innerText.includes("surplus")?Math.floor(Math.abs(parseInt(carryCalc.innerText.split(",")[0], 10))/houses):0})
-= ${transferAmt.value*houses} + ${carryCalc.innerText.includes("surplus")?Math.floor(Math.abs(parseInt(carryCalc.innerText.split(",")[0], 10))):0}
-= ${(transferAmt.value*houses) + (carryCalc.innerText.includes("surplus")?Math.floor(Math.abs(parseInt(carryCalc.innerText.split(",")[0], 10))):0)}
+(${transferAmt.value}* ${houses}) + (${houses}*${carryCalc.innerText.includes("surplus")?Math.round(Math.abs(parseInt(carryCalc.innerText.split(",")[0], 10))/houses):0})
+= ${transferAmt.value*houses} + ${carryCalc.innerText.includes("surplus")?Math.round(Math.abs(parseInt(carryCalc.innerText.split(",")[0], 10))):0}
+= ${(transferAmt.value*houses) + (carryCalc.innerText.includes("surplus")?Math.round(Math.abs(parseInt(carryCalc.innerText.split(",")[0], 10))):0)}
 
 Note: Anusha needs pay ${transferCalc.innerText.split("=").pop().trim()-commonAmt.value} only.
 
